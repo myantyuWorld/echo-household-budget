@@ -1,0 +1,245 @@
+openapi: 3.0.0
+info:
+  title: Sample API
+  description: Optional multiline or single-line description in [CommonMark](http://commonmark.org/help/) or HTML.
+  version: 0.1.9
+
+servers:
+  - url: http://api.example.com/v1
+    description: Optional server description, e.g. Internal staging server for testing
+
+paths:
+  /kaimemo:
+    get:
+      tags:
+        - 買い物メモ
+      summary: 買い物一覧取得
+      description: 全件取得する
+      parameters:
+        - in : query
+          name: tempUserID
+          schema:
+            type: string
+            required:
+              - tempUserID
+      responses:
+        200: 
+          $ref: '#/components/responses/GetKaimemos'
+    post:
+      tags:
+        - 買い物メモ
+      summary: 買い物追加
+      description: 買い物を追加する
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              properties:
+                tempUserID:
+                  type: string
+                name:
+                  type: string
+                tag:
+                  type: string
+      responses:
+        200:
+          description: OK
+        401:
+          $ref: '#/components/responses/UnauthorizedError'
+        404:
+          $ref: '#/components/responses/NotFoundError'
+        default:
+          $ref: '#/components/responses/GeneralError'
+  /kaimemo/{id}:
+    delete:
+      tags:
+        - 買い物メモ
+      summary: 買い物削除
+      description: 買い物を削除する
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              properties:
+                tempUserID:
+                  type: string
+      responses:
+        200:
+          description: OK
+        401:
+          $ref: '#/components/responses/UnauthorizedError'
+        404:
+          $ref: '#/components/responses/NotFoundError'
+        default:
+          $ref: '#/components/responses/GeneralError'
+  /kaimemo/summary:
+    get:
+      tags:
+        - 買い物集計
+      summary: 買い物集計
+      description: 買い物を集計する
+      parameters:
+        - in : query
+          name: tempUserID
+          schema:
+            type: string
+            required:
+              - tempUserID
+      responses:
+        200:
+          $ref: '#/components/responses/GetKaimemoSummary'
+    post:
+      tags:
+        - 買い物集計
+      summary: 買い物集計
+      description: 買い物を集計する
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              properties:
+                tempUserID:
+                  type: string
+                tag : 
+                  type: string
+                  example: 食費
+                date:
+                  type: string
+                  example: '2020-01-01'
+                amount:
+                  type: integer
+                  example: 1000
+      responses:
+        200:
+          description: OK
+        401:
+          $ref: '#/components/responses/UnauthorizedError'
+        404:
+          $ref: '#/components/responses/NotFoundError'
+        default:
+          $ref: '#/components/responses/GeneralError'
+  /kaimemo/summary/{id}:
+    delete:
+      tags:
+        - 買い物集計
+      summary: 買い物削除
+      description: 買い物を削除する
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              properties:
+                tempUserID:
+                  type: string
+      responses:
+        200:
+          description: OK
+        401:
+          $ref: '#/components/responses/UnauthorizedError'
+        404:
+          $ref: '#/components/responses/NotFoundError'
+        default:
+          $ref: '#/components/responses/GeneralError'
+components:
+  responses:
+    GetKaimemoSummary:
+      description: 週次集計
+      content:
+        application/json:
+          schema:
+            type : object
+            $ref: '#/components/schemas/KaimemoSummary'
+    GetKaimemos:
+      description: 買い物一覧取得
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: '#/components/schemas/Kaimemo'
+    UnauthorizedError:
+      description: Access token is missing or invalid
+    NotFoundError:
+      description: The specified resource was not found
+    GeneralError:
+      description: Unexpected error
+  schemas:
+    KaimemoSummary:
+      type: object
+      properties:
+        monthlySummaries:
+          type: array
+          items:
+            $ref: '#/components/schemas/MonthlySummary'
+        weeklySummaries:
+          type: array
+          items:
+            $ref: '#/components/schemas/WeeklySummary'
+    TagSummary:
+      type: object
+      additionalProperties:
+        type: integer
+    MonthlySummary:
+      type: object
+      properties:
+        month:
+          type: string
+        totalAmount:
+          type: integer
+          example: 10000
+        tagSummary :
+          $ref: '#/components/schemas/TagSummary'
+    WeeklySummary:
+      type: object
+      properties:
+        weekStart:
+          type: string
+        weekEnd:
+          type: string
+        totalAmount:
+          type: integer
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/KaimemoAmount'
+    KaimemoAmount:
+      type: object
+      properties:
+        id:
+          type: string
+        date:
+          type: string
+          example: '2020-01-01'
+        tag:
+          type: string
+          example: 食費
+        amount:
+          type: integer
+          example: 1000
+    Kaimemo:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        tag:
+          type: string
+        done:
+          type: boolean
