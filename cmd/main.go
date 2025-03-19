@@ -52,7 +52,7 @@ func main() {
 	lineAuth := e.Group("/line")
 	lineAuth.GET("/login", lineAuthHandler.Login)
 	lineAuth.GET("/callback", lineAuthHandler.Callback)
-	lineAuth.GET("/logout", lineAuthHandler.Logout)
+	lineAuth.POST("/logout", lineAuthHandler.Logout)
 	lineAuth.GET("/me", lineAuthHandler.FetchMe)
 
 	port := "3000"

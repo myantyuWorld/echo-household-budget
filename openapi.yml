@@ -9,6 +9,38 @@ servers:
     description: Optional server description, e.g. Internal staging server for testing
 
 paths:
+  /line/login:
+    get:
+      tags:
+        - LINE
+      summary: LINEログイン
+      description: LINEログイン
+      responses:
+        200:
+          description: 
+            LINE認証画面に遷移し、ログインに成功した場合、LINE Developerにて指定したCallbackURLに遷移する。
+            CallBackURLに遷移後、システムに該当するLINEUserIDにひもづくユーザー情報が存在しない場合、ユーザー登録を行い、
+            フロントエンドのホーム画面にリダイレクトを行う
+  /line/me:
+    get:
+      tags:
+        - LINE
+      summary: LINEログイン
+      description: LINEログイン
+      responses:
+        200:
+          $ref: '#/components/responses/GetLineMe'
+        400:
+          $ref: '#/components/responses/UnauthorizedError'
+  /line/logout:
+    post:
+      tags:
+        - LINE
+      summary: LINEログアウト
+      description: LINEログアウト
+      responses:
+        200:
+          description: OK
   /kaimemo:
     get:
       tags:
@@ -158,6 +190,13 @@ paths:
           $ref: '#/components/responses/GeneralError'
 components:
   responses:
+    GetLineMe:
+      description: ユーザー情報取得
+      content:
+        application/json:
+          schema:
+            type : object
+            $ref: '#/components/schemas/LineMe'
     GetKaimemoSummary:
       description: 週次集計
       content:
@@ -180,6 +219,11 @@ components:
     GeneralError:
       description: Unexpected error
   schemas:
+    LineMe:
+      type: object
+      properties:
+        displayName:
+          type: string
     KaimemoSummary:
       type: object
       properties:
