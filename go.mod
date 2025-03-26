@@ -7,7 +7,9 @@ toolchain go1.23.7
 require github.com/labstack/echo/v4 v4.13.3
 
 require (
+	github.com/go-gorp/gorp/v3 v3.1.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
+	github.com/rubenv/sql-migrate v1.7.1 // indirect
 	github.com/stretchr/objx v0.5.2 // indirect
 	go.uber.org/mock v0.5.0 // indirect
 	golang.org/x/oauth2 v0.28.0 // indirect
