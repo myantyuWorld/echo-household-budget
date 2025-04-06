@@ -1,0 +1,34 @@
+@startuml
+
+' Define actors, boundary objects, control objects and entities
+actor User
+boundary "ユーザー画面\nパージ" as Page
+boundary "LINE対応アカウント\n成功" as LineAccount
+control "メッセージ送信に\n成功した場合\nMSG送信" as MsgSuccess
+control "メッセージ送信に\n失敗した場合\nMSG送信" as MsgFail
+control "通知に存在するか？" as NotificationCheck
+control "ユーザー情報を取得\nする" as GetUserInfo
+control "ユーザー情報を\n見る" as ViewUserInfo
+boundary "LINEユーザー" as LineUser
+entity "ユーザー" as UserEntity
+entity "設定時" as Settings
+
+' Draw relationships
+User --> Page
+Page --> LineAccount : 処理
+LineAccount --> ViewUserInfo : 成功
+LineAccount --> GetUserInfo
+
+GetUserInfo --> NotificationCheck
+NotificationCheck --> MsgFail : 失敗
+MsgFail --> UserEntity
+MsgSuccess --> UserEntity
+NotificationCheck --> MsgSuccess : 成功
+
+MsgSuccess --> UserEntity
+UserEntity --> User
+LineAccount --> LineUser
+ViewUserInfo -down-> UserEntity
+UserEntity -down-> Settings
+
+@enduml
