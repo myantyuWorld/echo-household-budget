@@ -24,7 +24,7 @@ jobs:
       - uses: actions/checkout@v3
 
       # AWS 認証
-      - uses: aws-actions/configure-aws-credentials@v2
+      - uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-region: "ap-northeast-1"
           role-to-assume: "arn:aws:iam::583492173965:role/github-actions-push-ecr-for-echo-household-budget"
