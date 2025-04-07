@@ -28,7 +28,6 @@ jobs:
         with:
           aws-region: "ap-northeast-1"
           role-to-assume: "arn:aws:iam::583492173965:role/github-actions-push-ecr-for-echo-household-budget"
-          audience: sts.amazonaws.com
 
       # ECR ログイン
       - uses: aws-actions/amazon-ecr-login@v1
