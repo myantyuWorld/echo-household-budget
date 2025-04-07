@@ -1,0 +1,46 @@
+# 事前準備は以下の通り
+# FYI. GitHub Actions から ECR に Docker イメージを push する | https://zenn.dev/kou_pg_0131/articles/gh-actions-ecr-push-image
+#     1. GitHub Actions 用の ID プロバイダと IAM ロールを作成する
+#         - GitHub Actions で OIDC を使用して AWS 認証を行う | https://zenn.dev/kou_pg_0131/articles/gh-actions-oidc-aws-auth
+#     2. ECR リポジトリを作成する
+#     3. GitHub Actions 用の IAM ロールに必要な権限を付与する
+#     4. GitHub Actions ワークフローを作成する
+
+name: deploy_dev_api
+
+on:
+  push:
+    tags:
+      - 'dev-*'
+
+jobs:
+  push:
+    runs-on: ubuntu-latest
+    # `permissions` を設定しないと OIDC が使えないので注意
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v3
+
+      # AWS 認証
+      - uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-region: "ap-northeast-1"
+          role-to-assume: "arn:aws:iam::583492173965:role/github-actions-push-ecr-for-echo-household-budget"
+
+      # ECR ログイン
+      - uses: aws-actions/amazon-ecr-login@v1
+        id: login-ecr
+
+      # Docker イメージを build・push する
+      - name: build and push docker image to ecr
+        env:
+          REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          REPOSITORY: "household-budge-api"
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          docker build . --tag ${{ env.REGISTRY }}/${{ env.REPOSITORY }}:latest --target aws
+          docker tag ${{ env.REGISTRY }}/${{ env.REPOSITORY }}:latest ${{ env.REGISTRY }}/${{ env.REPOSITORY }}:${{ env.IMAGE_TAG }}
+          docker push ${{ env.REGISTRY }}/${{ env.REPOSITORY }}:latest
+          docker push ${{ env.REGISTRY }}/${{ env.REPOSITORY }}:${{ env.IMAGE_TAG }}
