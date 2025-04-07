@@ -1,4 +1,4 @@
-FROM golang:1.22 AS aws
+FROM golang:1.23 AS aws
 ENV TZ Asia/Tokyo
 WORKDIR /go/src/app
 RUN go install github.com/rubenv/sql-migrate/...@latest
