@@ -13,8 +13,8 @@ import (
 type Config struct {
 	Server   ServerConfig   `validate:"required"`
 	Database DatabaseConfig `validate:"required"`
-	LINE     LINEConfig    `validate:"required"`
-	Notion   NotionConfig  `validate:"required"`
+	LINE     LINEConfig     `validate:"required"`
+	Notion   NotionConfig   `validate:"required"`
 }
 
 // ServerConfig はサーバー関連の設定
@@ -41,9 +41,9 @@ type LINEConfig struct {
 
 // NotionConfig はNotion関連の設定
 type NotionConfig struct {
-	APIKey                    string `validate:"required"`
-	KaimemoDatabaseInputID    string `validate:"required"`
-	KaimemoDatabaseSummaryID  string `validate:"required"`
+	APIKey                   string `validate:"required"`
+	KaimemoDatabaseInputID   string `validate:"required"`
+	KaimemoDatabaseSummaryID string `validate:"required"`
 }
 
 // Load は環境変数から設定を読み込む
@@ -124,12 +124,12 @@ func validateRequiredEnvVars(config *Config) error {
 }
 
 type AppConfig struct {
-	Port                               string
-	NotionAPIKey                       string
-	NotionKaimemoDatabaseInputID       string
+	Port                                 string
+	NotionAPIKey                         string
+	NotionKaimemoDatabaseInputID         string
 	NotionKaimemoDatabaseSummaryRecordID string
-	AllowOrigins                       []string
-	LINEConfig                         *oauth2.Config
+	AllowOrigins                         []string
+	LINEConfig                           *oauth2.Config
 }
 
 func LoadConfig() *AppConfig {
@@ -150,12 +150,12 @@ func LoadConfig() *AppConfig {
 	}
 
 	return &AppConfig{
-		Port:                               getEnvWithDefault("PORT", "3000"),
-		NotionAPIKey:                       os.Getenv("NOTION_API_KEY"),
-		NotionKaimemoDatabaseInputID:       os.Getenv("NOTION_KAIMEMO_DB_INPUT_ID"),
+		Port:                                 getEnvWithDefault("PORT", "3000"),
+		NotionAPIKey:                         os.Getenv("NOTION_API_KEY"),
+		NotionKaimemoDatabaseInputID:         os.Getenv("NOTION_KAIMEMO_DB_INPUT_ID"),
 		NotionKaimemoDatabaseSummaryRecordID: os.Getenv("NOTION_KAIMEMO_DB_SUMMARY_ID"),
-		AllowOrigins:                       []string{os.Getenv("ALLOW_ORIGINS")},
-		LINEConfig:                         lineConfig,
+		AllowOrigins:                         []string{os.Getenv("ALLOW_ORIGINS")},
+		LINEConfig:                           lineConfig,
 	}
 }
 
