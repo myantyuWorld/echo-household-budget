@@ -38,6 +38,12 @@ func main() {
 	lineAuthService := service.NewLineAuthService(lineRepository)
 	lineAuthHandler := handler.NewLineAuthHandler(lineAuthService, appConfig.LINEConfig)
 
+	e.GET("/health", func(c echo.Context) error {
+		return c.JSON(http.StatusOK, map[string]string{
+			"status": "ok",
+		})
+	})
+
 	kaimemo := e.Group("/kaimemo")
 	kaimemo.GET("", kaimemoHandler.FetchKaimemo)
 	kaimemo.POST("", kaimemoHandler.CreateKaimemo)
