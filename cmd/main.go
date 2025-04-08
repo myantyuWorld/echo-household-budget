@@ -47,8 +47,12 @@ func main() {
 	kaimemoHandler := handler.NewKaimemoHandler(kaimemoService)
 	lineAuthHandler := handler.NewLineAuthHandler(lineAuthService, appConfig.LINEConfig)
 
+	e.GET("/health", func(c echo.Context) error {
+		return c.JSON(http.StatusOK, map[string]string{
+			"status": "ok",
+		})
+	})
 
-	// 買い物メモ関連のエンドポイント
 	kaimemo := e.Group("/kaimemo")
 	kaimemo.GET("", kaimemoHandler.FetchKaimemo)
 	kaimemo.POST("", kaimemoHandler.CreateKaimemo)
