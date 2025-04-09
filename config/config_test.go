@@ -22,25 +22,23 @@ func unsetEnv(keys ...string) {
 func TestLoadConfig_Success(t *testing.T) {
 	// テスト用の環境変数をセット
 	setEnv("NOTION_API_KEY", "test-api-key")
-	setEnv("NOTION_DATABASE_KAIMEMO_INPUT", "test-database-input-id")
-	setEnv("NOTION_DATABASE_KAIMEMO_SUMMARY_RECORD", "test-database-summary-id")
-	setEnv("FRONTEND_URL", "https://example.com")
-	setEnv("LINE_CLIENT_ID", "test-client-id")
-	setEnv("LINE_CLIENT_SECRET", "test-client-secret")
-	setEnv("LINE_JWT_SECRET", "test-jwt-secret")
-	setEnv("LINE_STATE", "test-state")
+	setEnv("NOTION_KAIMEMO_DB_INPUT_ID", "test-database-input-id")
+	setEnv("NOTION_KAIMEMO_DB_SUMMARY_ID", "test-database-summary-id")
+	setEnv("ALLOW_ORIGINS", "https://example.com")
+	setEnv("LINE_CHANNEL_ID", "test-client-id")
+	setEnv("LINE_CHANNEL_SECRET", "test-client-secret")
 	setEnv("LINE_REDIRECT_URI", "https://example.com/callback")
-	setEnv("LINE_TOKEN_URL", "https://example.com/token")
 
 	// テスト終了後に環境変数をリセット
-	defer unsetEnv("NOTION_API_KEY", "NOTION_DATABASE_KAIMEMO_INPUT", "NOTION_DATABASE_KAIMEMO_SUMMARY_RECORD", "FRONTEND_URL")
-
-	// `log.Fatal` をキャッチするためにリカバリ
-	defer func() {
-		if r := recover(); r != nil {
-			t.Errorf("Unexpected fatal error: %v", r)
-		}
-	}()
+	defer unsetEnv(
+		"NOTION_API_KEY",
+		"NOTION_KAIMEMO_DB_INPUT_ID",
+		"NOTION_KAIMEMO_DB_SUMMARY_ID",
+		"ALLOW_ORIGINS",
+		"LINE_CHANNEL_ID",
+		"LINE_CHANNEL_SECRET",
+		"LINE_REDIRECT_URI",
+	)
 
 	// Configロード
 	config := LoadConfig()
@@ -53,10 +51,9 @@ func TestLoadConfig_Success(t *testing.T) {
 	assert.Equal(t, "test-database-summary-id", config.NotionKaimemoDatabaseSummaryRecordID)
 	assert.Contains(t, config.AllowOrigins, "https://example.com")
 
+	// LINE設定の検証
+	assert.NotNil(t, config.LINEConfig)
 	assert.Equal(t, "test-client-id", config.LINEConfig.ClientID)
 	assert.Equal(t, "test-client-secret", config.LINEConfig.ClientSecret)
-	assert.Equal(t, "test-jwt-secret", config.LINEConfig.JwtSecret)
-	assert.Equal(t, "test-state", config.LINEConfig.State)
-	assert.Equal(t, "https://example.com/callback", config.LINEConfig.RedirectURI)
-	assert.Equal(t, "https://example.com/token", config.LINEConfig.TokenURL)
+	assert.Equal(t, "https://example.com/callback", config.LINEConfig.RedirectURL)
 }

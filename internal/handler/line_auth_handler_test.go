@@ -10,6 +10,7 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
+	"golang.org/x/oauth2"
 )
 
 func TestAuthHandler_Login(t *testing.T) {
@@ -17,7 +18,10 @@ func TestAuthHandler_Login(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockLineAuthService := service.NewMockLineAuthService(ctrl)
-	handler := &lineAuthHandler{lineAuthService: mockLineAuthService}
+	handler := &lineAuthHandler{
+		lineAuthService: mockLineAuthService,
+		lineConfig:      &oauth2.Config{},
+	}
 
 	tests := []struct {
 		name           string
@@ -61,20 +65,37 @@ func TestAuthHandler_Login(t *testing.T) {
 		})
 	}
 }
+
 func TestAuthHandler_Callback(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	mockLineAuthService := service.NewMockLineAuthService(ctrl)
+	handler := &lineAuthHandler{
+		lineAuthService: mockLineAuthService,
+		lineConfig:      &oauth2.Config{},
+	}
+
 	tests := []struct {
 		name           string
 		code           string
+		setupMock      func()
 		expectedStatus int
 	}{
 		{
-			name:           "successful callback",
-			code:           "valid_code",
+			name: "successful callback",
+			code: "valid_code",
+			setupMock: func() {
+				mockLineAuthService.EXPECT().Callback(gomock.Any(), "valid_code").Return(nil)
+			},
 			expectedStatus: http.StatusOK,
 		},
 		{
-			name:           "missing code",
-			code:           "",
+			name: "missing code",
+			code: "",
+			setupMock: func() {
+				// コードが空の場合はサービスが呼ばれない
+			},
 			expectedStatus: http.StatusBadRequest,
 		},
 	}
@@ -86,7 +107,8 @@ func TestAuthHandler_Callback(t *testing.T) {
 			rec := httptest.NewRecorder()
 			c := e.NewContext(req, rec)
 
-			handler := NewLineAuthHandler()
+			tt.setupMock()
+
 			err := handler.Callback(c)
 
 			assert.NoError(t, err)
@@ -95,12 +117,15 @@ func TestAuthHandler_Callback(t *testing.T) {
 	}
 }
 
-func TestAuthHandler_CheckAuth(t *testing.T) {
+func TestAuthHandler_FetchMe(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
 	mockLineAuthService := service.NewMockLineAuthService(ctrl)
-	handler := &lineAuthHandler{lineAuthService: mockLineAuthService}
+	handler := &lineAuthHandler{
+		lineAuthService: mockLineAuthService,
+		lineConfig:      &oauth2.Config{},
+	}
 
 	tests := []struct {
 		name           string
@@ -132,7 +157,7 @@ func TestAuthHandler_CheckAuth(t *testing.T) {
 
 			tt.setupMock()
 
-			err := handler.CheckAuth(c)
+			err := handler.FetchMe(c)
 
 			assert.NoError(t, err)
 			assert.Equal(t, tt.expectedStatus, rec.Code)
@@ -145,14 +170,17 @@ func TestAuthHandler_Logout(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockLineAuthService := service.NewMockLineAuthService(ctrl)
-	handler := &lineAuthHandler{lineAuthService: mockLineAuthService}
+	handler := &lineAuthHandler{
+		lineAuthService: mockLineAuthService,
+		lineConfig:      &oauth2.Config{},
+	}
 
 	e := echo.New()
 	req := httptest.NewRequest(http.MethodPost, "/logout", nil)
 	rec := httptest.NewRecorder()
 	c := e.NewContext(req, rec)
 
-	mockLineAuthService.EXPECT().Logout(gomock.Any()).Times(1)
+	mockLineAuthService.EXPECT().Logout(gomock.Any()).Return(nil)
 
 	err := handler.Logout(c)
 

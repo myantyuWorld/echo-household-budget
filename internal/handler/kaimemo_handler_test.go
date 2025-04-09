@@ -19,29 +19,47 @@ func TestEchoRouterSetup(t *testing.T) {
 			name: "router with basic middleware",
 			setupRouter: func() *echo.Echo {
 				e := echo.New()
+				e.GET("/kaimemo", func(c echo.Context) error {
+					return c.NoContent(http.StatusOK)
+				})
+				e.GET("/kaimemo/summary", func(c echo.Context) error {
+					return c.NoContent(http.StatusOK)
+				})
 				return e
 			},
-			expectedRoutes: []string{"/", "/health"},
+			expectedRoutes: []string{"/kaimemo", "/kaimemo/summary"},
 		},
 		{
 			name: "router with custom error handler",
 			setupRouter: func() *echo.Echo {
 				e := echo.New()
 				e.HTTPErrorHandler = func(err error, c echo.Context) {
-					c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
+					c.JSON(http.StatusNotFound, map[string]string{"error": err.Error()})
 				}
+				e.GET("/kaimemo", func(c echo.Context) error {
+					return c.NoContent(http.StatusOK)
+				})
+				e.GET("/kaimemo/summary", func(c echo.Context) error {
+					return c.NoContent(http.StatusOK)
+				})
 				return e
 			},
-			expectedRoutes: []string{"/", "/health"},
+			expectedRoutes: []string{"/kaimemo", "/kaimemo/summary"},
 		},
 		{
 			name: "router with custom binder",
 			setupRouter: func() *echo.Echo {
 				e := echo.New()
 				e.Binder = &echo.DefaultBinder{}
+				e.GET("/kaimemo", func(c echo.Context) error {
+					return c.NoContent(http.StatusOK)
+				})
+				e.GET("/kaimemo/summary", func(c echo.Context) error {
+					return c.NoContent(http.StatusOK)
+				})
 				return e
 			},
-			expectedRoutes: []string{"/", "/health"},
+			expectedRoutes: []string{"/kaimemo", "/kaimemo/summary"},
 		},
 	}
 

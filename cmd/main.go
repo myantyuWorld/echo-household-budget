@@ -1,60 +1,72 @@
 package main
 
 import (
+	"fmt"
 	"net/http"
 	"template-echo-notion-integration/config"
 	"template-echo-notion-integration/internal/handler"
+	"template-echo-notion-integration/internal/middleware"
 	"template-echo-notion-integration/internal/repository"
 	"template-echo-notion-integration/internal/service"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/labstack/echo/v4"
-	"github.com/labstack/echo/v4/middleware"
+	echomiddleware "github.com/labstack/echo/v4/middleware"
 )
 
 // export XXは、開いているターミナルのみ有効
 // export PATH=$PATH:$(go env GOPATH)/bin && air -c .air.toml でホットリロードを有効化
 func main() {
+	// 設定の読み込み
 	appConfig := config.LoadConfig()
-	spew.Dump(appConfig)
 
+	// Echoインスタンスの作成
 	e := echo.New()
-	e.Use(middleware.Logger())
-	e.Use(middleware.Recover())
-	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
-		AllowOrigins: appConfig.AllowOrigins,
-		AllowMethods: []string{http.MethodGet, http.MethodPost, http.MethodPost, http.MethodDelete},
-	}))
 
+	// ミドルウェアの設定
+	e.Use(echomiddleware.Logger())
+	e.Use(echomiddleware.Recover())
+	e.Use(echomiddleware.CORSWithConfig(echomiddleware.CORSConfig{
+		AllowOrigins: appConfig.AllowOrigins,
+		AllowMethods: []string{http.MethodGet, http.MethodPost, http.MethodDelete},
+	}))
+	e.Use(middleware.ErrorHandler())
+
+	// リポジトリの初期化
 	kaimemoRepository := repository.NewNotionRepository(
 		appConfig.NotionAPIKey,
 		appConfig.NotionKaimemoDatabaseInputID,
 		appConfig.NotionKaimemoDatabaseSummaryRecordID,
 	)
-	kaimemoService := service.NewKaimemoService(kaimemoRepository)
-	kaimemoHandler := handler.NewKaimemoHandler(kaimemoService)
-
 	lineRepository := repository.NewLineRepository(appConfig.LINEConfig)
+
+	// サービスの初期化
+	kaimemoService := service.NewKaimemoService(kaimemoRepository)
 	lineAuthService := service.NewLineAuthService(lineRepository)
+
+	// ハンドラーの初期化
+	kaimemoHandler := handler.NewKaimemoHandler(kaimemoService)
 	lineAuthHandler := handler.NewLineAuthHandler(lineAuthService, appConfig.LINEConfig)
 
-	kaimemo := e.Group("/kaimemo")
+	// ルーティングの設定
+	v1 := e.Group("/v1")
+
+	// 買い物メモ関連のエンドポイント
+	kaimemo := v1.Group("/kaimemo")
 	kaimemo.GET("", kaimemoHandler.FetchKaimemo)
 	kaimemo.POST("", kaimemoHandler.CreateKaimemo)
 	kaimemo.DELETE("/:id", kaimemoHandler.RemoveKaimemo)
-
 	kaimemo.GET("/ws", kaimemoHandler.WebsocketTelegraph)
-
 	kaimemo.GET("/summary", kaimemoHandler.FetchKaimemoSummaryRecord)
 	kaimemo.POST("/summary", kaimemoHandler.CreateKaimemoAmount)
 	kaimemo.DELETE("/summary/:id", kaimemoHandler.RemoveKaimemoAmount)
 
-	lineAuth := e.Group("/line")
+	// LINE認証関連のエンドポイント
+	lineAuth := v1.Group("/line")
 	lineAuth.GET("/login", lineAuthHandler.Login)
 	lineAuth.GET("/callback", lineAuthHandler.Callback)
 	lineAuth.POST("/logout", lineAuthHandler.Logout)
 	lineAuth.GET("/me", lineAuthHandler.FetchMe)
 
-	port := "3000"
-	e.Logger.Fatal(e.Start(":" + port))
+	// サーバーの起動
+	e.Logger.Fatal(e.Start(fmt.Sprintf(":%s", appConfig.Port)))
 }
