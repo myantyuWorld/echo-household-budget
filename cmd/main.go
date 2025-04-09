@@ -47,11 +47,9 @@ func main() {
 	kaimemoHandler := handler.NewKaimemoHandler(kaimemoService)
 	lineAuthHandler := handler.NewLineAuthHandler(lineAuthService, appConfig.LINEConfig)
 
-	// ルーティングの設定
-	v1 := e.Group("/v1")
 
 	// 買い物メモ関連のエンドポイント
-	kaimemo := v1.Group("/kaimemo")
+	kaimemo := e.Group("/kaimemo")
 	kaimemo.GET("", kaimemoHandler.FetchKaimemo)
 	kaimemo.POST("", kaimemoHandler.CreateKaimemo)
 	kaimemo.DELETE("/:id", kaimemoHandler.RemoveKaimemo)
@@ -61,7 +59,7 @@ func main() {
 	kaimemo.DELETE("/summary/:id", kaimemoHandler.RemoveKaimemoAmount)
 
 	// LINE認証関連のエンドポイント
-	lineAuth := v1.Group("/line")
+	lineAuth := e.Group("/line")
 	lineAuth.GET("/login", lineAuthHandler.Login)
 	lineAuth.GET("/callback", lineAuthHandler.Callback)
 	lineAuth.POST("/logout", lineAuthHandler.Logout)

@@ -22,12 +22,31 @@ func TestEchoRouterSetup(t *testing.T) {
 				e.GET("/kaimemo", func(c echo.Context) error {
 					return c.NoContent(http.StatusOK)
 				})
+				e.POST("/kaimemo", func(c echo.Context) error {
+					return c.NoContent(http.StatusOK)
+				})
+				e.DELETE("/kaimemo/:id", func(c echo.Context) error {
+					return c.NoContent(http.StatusOK)
+				})
+				e.GET("/kaimemo/ws", func(c echo.Context) error {
+					return c.NoContent(http.StatusOK)
+				})
 				e.GET("/kaimemo/summary", func(c echo.Context) error {
+					return c.NoContent(http.StatusOK)
+				})
+				e.POST("/kaimemo/summary", func(c echo.Context) error {
+					return c.NoContent(http.StatusOK)
+				})
+				e.DELETE("/kaimemo/summary/:id", func(c echo.Context) error {
 					return c.NoContent(http.StatusOK)
 				})
 				return e
 			},
-			expectedRoutes: []string{"/kaimemo", "/kaimemo/summary"},
+			expectedRoutes: []string{
+				"/kaimemo",
+				"/kaimemo/ws",
+				"/kaimemo/summary",
+			},
 		},
 		{
 			name: "router with custom error handler",
@@ -39,12 +58,31 @@ func TestEchoRouterSetup(t *testing.T) {
 				e.GET("/kaimemo", func(c echo.Context) error {
 					return c.NoContent(http.StatusOK)
 				})
+				e.POST("/kaimemo", func(c echo.Context) error {
+					return c.NoContent(http.StatusOK)
+				})
+				e.DELETE("/kaimemo/:id", func(c echo.Context) error {
+					return c.NoContent(http.StatusOK)
+				})
+				e.GET("/kaimemo/ws", func(c echo.Context) error {
+					return c.NoContent(http.StatusOK)
+				})
 				e.GET("/kaimemo/summary", func(c echo.Context) error {
+					return c.NoContent(http.StatusOK)
+				})
+				e.POST("/kaimemo/summary", func(c echo.Context) error {
+					return c.NoContent(http.StatusOK)
+				})
+				e.DELETE("/kaimemo/summary/:id", func(c echo.Context) error {
 					return c.NoContent(http.StatusOK)
 				})
 				return e
 			},
-			expectedRoutes: []string{"/kaimemo", "/kaimemo/summary"},
+			expectedRoutes: []string{
+				"/kaimemo",
+				"/kaimemo/ws",
+				"/kaimemo/summary",
+			},
 		},
 		{
 			name: "router with custom binder",
@@ -54,12 +92,31 @@ func TestEchoRouterSetup(t *testing.T) {
 				e.GET("/kaimemo", func(c echo.Context) error {
 					return c.NoContent(http.StatusOK)
 				})
+				e.POST("/kaimemo", func(c echo.Context) error {
+					return c.NoContent(http.StatusOK)
+				})
+				e.DELETE("/kaimemo/:id", func(c echo.Context) error {
+					return c.NoContent(http.StatusOK)
+				})
+				e.GET("/kaimemo/ws", func(c echo.Context) error {
+					return c.NoContent(http.StatusOK)
+				})
 				e.GET("/kaimemo/summary", func(c echo.Context) error {
+					return c.NoContent(http.StatusOK)
+				})
+				e.POST("/kaimemo/summary", func(c echo.Context) error {
+					return c.NoContent(http.StatusOK)
+				})
+				e.DELETE("/kaimemo/summary/:id", func(c echo.Context) error {
 					return c.NoContent(http.StatusOK)
 				})
 				return e
 			},
-			expectedRoutes: []string{"/kaimemo", "/kaimemo/summary"},
+			expectedRoutes: []string{
+				"/kaimemo",
+				"/kaimemo/ws",
+				"/kaimemo/summary",
+			},
 		},
 	}
 

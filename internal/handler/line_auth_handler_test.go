@@ -49,7 +49,7 @@ func TestAuthHandler_Login(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			e := echo.New()
-			req := httptest.NewRequest(http.MethodGet, "/login", nil)
+			req := httptest.NewRequest(http.MethodGet, "/line/login", nil)
 			rec := httptest.NewRecorder()
 			c := e.NewContext(req, rec)
 
@@ -103,7 +103,7 @@ func TestAuthHandler_Callback(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			e := echo.New()
-			req := httptest.NewRequest(http.MethodGet, "/callback?code="+tt.code, nil)
+			req := httptest.NewRequest(http.MethodGet, "/line/callback?code="+tt.code, nil)
 			rec := httptest.NewRecorder()
 			c := e.NewContext(req, rec)
 
@@ -151,7 +151,7 @@ func TestAuthHandler_FetchMe(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			e := echo.New()
-			req := httptest.NewRequest(http.MethodGet, "/check-auth", nil)
+			req := httptest.NewRequest(http.MethodGet, "/line/me", nil)
 			rec := httptest.NewRecorder()
 			c := e.NewContext(req, rec)
 
@@ -176,7 +176,7 @@ func TestAuthHandler_Logout(t *testing.T) {
 	}
 
 	e := echo.New()
-	req := httptest.NewRequest(http.MethodPost, "/logout", nil)
+	req := httptest.NewRequest(http.MethodPost, "/line/logout", nil)
 	rec := httptest.NewRecorder()
 	c := e.NewContext(req, rec)
 
