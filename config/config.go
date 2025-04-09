@@ -3,9 +3,125 @@ package config
 import (
 	"log"
 	"os"
+	"template-echo-notion-integration/internal/shared/errors"
 
+	"github.com/joho/godotenv"
 	"golang.org/x/oauth2"
 )
+
+// Config はアプリケーションの設定を表す構造体
+type Config struct {
+	Server   ServerConfig   `validate:"required"`
+	Database DatabaseConfig `validate:"required"`
+	LINE     LINEConfig     `validate:"required"`
+	Notion   NotionConfig   `validate:"required"`
+}
+
+// ServerConfig はサーバー関連の設定
+type ServerConfig struct {
+	Port         string   `validate:"required"`
+	AllowOrigins []string `validate:"required"`
+}
+
+// DatabaseConfig はデータベース関連の設定
+type DatabaseConfig struct {
+	Host     string `validate:"required"`
+	Port     string `validate:"required"`
+	User     string `validate:"required"`
+	Password string `validate:"required"`
+	DBName   string `validate:"required"`
+}
+
+// LINEConfig はLINE関連の設定
+type LINEConfig struct {
+	ChannelID     string `validate:"required"`
+	ChannelSecret string `validate:"required"`
+	RedirectURI   string `validate:"required"`
+}
+
+// NotionConfig はNotion関連の設定
+type NotionConfig struct {
+	APIKey                   string `validate:"required"`
+	KaimemoDatabaseInputID   string `validate:"required"`
+	KaimemoDatabaseSummaryID string `validate:"required"`
+}
+
+// Load は環境変数から設定を読み込む
+func Load() (*Config, error) {
+	// .envファイルの読み込み
+	if err := godotenv.Load(); err != nil {
+		return nil, errors.NewAppError(
+			errors.ErrorCodeInternalError,
+			"Failed to load .env file",
+			err,
+		)
+	}
+
+	config := &Config{
+		Server: ServerConfig{
+			Port:         getEnvOrDefault("PORT", "3000"),
+			AllowOrigins: []string{getEnvOrDefault("ALLOW_ORIGINS", "*")},
+		},
+		Database: DatabaseConfig{
+			Host:     getEnvOrDefault("DB_HOST", "localhost"),
+			Port:     getEnvOrDefault("DB_PORT", "5432"),
+			User:     getEnvOrDefault("DB_USER", "postgres"),
+			Password: getEnvOrDefault("DB_PASSWORD", "postgres"),
+			DBName:   getEnvOrDefault("DB_NAME", "kakeibo"),
+		},
+		LINE: LINEConfig{
+			ChannelID:     getEnvOrDefault("LINE_CHANNEL_ID", ""),
+			ChannelSecret: getEnvOrDefault("LINE_CHANNEL_SECRET", ""),
+			RedirectURI:   getEnvOrDefault("LINE_REDIRECT_URI", ""),
+		},
+		Notion: NotionConfig{
+			APIKey:                   getEnvOrDefault("NOTION_API_KEY", ""),
+			KaimemoDatabaseInputID:   getEnvOrDefault("NOTION_KAIMEMO_DB_INPUT_ID", ""),
+			KaimemoDatabaseSummaryID: getEnvOrDefault("NOTION_KAIMEMO_DB_SUMMARY_ID", ""),
+		},
+	}
+
+	// 必須環境変数のチェック
+	if err := validateRequiredEnvVars(config); err != nil {
+		return nil, err
+	}
+
+	return config, nil
+}
+
+// getEnvOrDefault は環境変数を取得し、存在しない場合はデフォルト値を返す
+func getEnvOrDefault(key, defaultValue string) string {
+	if value := os.Getenv(key); value != "" {
+		return value
+	}
+	return defaultValue
+}
+
+// validateRequiredEnvVars は必須環境変数の存在をチェックする
+func validateRequiredEnvVars(config *Config) error {
+	if config.LINE.ChannelID == "" {
+		return errors.NewAppError(
+			errors.ErrorCodeInvalidInput,
+			"LINE_CHANNEL_ID is required",
+			nil,
+		)
+	}
+	if config.LINE.ChannelSecret == "" {
+		return errors.NewAppError(
+			errors.ErrorCodeInvalidInput,
+			"LINE_CHANNEL_SECRET is required",
+			nil,
+		)
+	}
+	if config.Notion.APIKey == "" {
+		return errors.NewAppError(
+			errors.ErrorCodeInvalidInput,
+			"NOTION_API_KEY is required",
+			nil,
+		)
+	}
+	return nil
+}
 
 type AppConfig struct {
 	Port                                 string
@@ -13,95 +129,39 @@ type AppConfig struct {
 	NotionKaimemoDatabaseInputID         string
 	NotionKaimemoDatabaseSummaryRecordID string
 	AllowOrigins                         []string
-	// LINEConfig                           *LINEConfig
-	LINEConfig *oauth2.Config
-}
-
-type LINEConfig struct {
-	ClientID     string
-	ClientSecret string
-	JwtSecret    string
-	State        string
-	RedirectURI  string
+	LINEConfig                           *oauth2.Config
 }
 
 func LoadConfig() *AppConfig {
-	port := "3000"
-	// HACK : productionなら、.envを読み込まない設定にしたい
-	// if err := dotenv.Load(); err != nil {
-	// 	log.Fatalln(err)
-	// }
-
-	apiKey := os.Getenv("NOTION_API_KEY")
-	if apiKey == "" {
-		log.Fatal("NOTION_API_KEY is not set")
+	if err := godotenv.Load(); err != nil {
+		log.Printf("Warning: .env file not found")
 	}
 
-	notionKaimemoDatabaseInputID := os.Getenv("NOTION_DATABASE_KAIMEMO_INPUT")
-	if notionKaimemoDatabaseInputID == "" {
-		log.Fatal("NOTION_DATABASE_KAIMEMO_INPUT is not set")
+	// LINE OAuth2設定
+	lineConfig := &oauth2.Config{
+		ClientID:     os.Getenv("LINE_CHANNEL_ID"),
+		ClientSecret: os.Getenv("LINE_CHANNEL_SECRET"),
+		RedirectURL:  os.Getenv("LINE_REDIRECT_URI"),
+		Scopes:       []string{"profile"},
+		Endpoint: oauth2.Endpoint{
+			AuthURL:  "https://access.line.me/oauth2/v2.1/authorize",
+			TokenURL: "https://api.line.me/oauth2/v2.1/token",
+		},
 	}
-
-	notionKaimemoDatabaseSummaryRecordID := os.Getenv("NOTION_DATABASE_KAIMEMO_SUMMARY_RECORD")
-	if notionKaimemoDatabaseSummaryRecordID == "" {
-		log.Fatal("NOTION_DATABASE_KAIMEMO_SUMMARY_RECORD is not set")
-	}
-
-	frontEndUrl := os.Getenv("FRONTEND_URL")
-	if frontEndUrl == "" {
-		log.Fatal("FRONTEND_URL is not set")
-	}
-
-	lineClientID := os.Getenv("LINE_CLIENT_ID")
-	if lineClientID == "" {
-		log.Fatal("LINE_CLIENT_ID is not set")
-	}
-	lineClientSecret := os.Getenv("LINE_CLIENT_SECRET")
-	if lineClientSecret == "" {
-		log.Fatal("LINE_CLIENT_SECRET is not set")
-	}
-	lineJwtSecret := os.Getenv("LINE_JWT_SECRET")
-	if lineJwtSecret == "" {
-		log.Fatal("LINE_JWT_SECRET is not set")
-	}
-	lineState := os.Getenv("LINE_STATE")
-	if lineState == "" {
-		log.Fatal("LINE_STATE is not set")
-	}
-
-	lineRedirectURI := os.Getenv("LINE_REDIRECT_URI")
-	if lineRedirectURI == "" {
-		log.Fatal("LINE_REDIRECT is not set")
-	}
-	// lineTokenURL := os.Getenv("LINE_TOKEN_URL")
-	// if lineTokenURL == "" {
-	// 	log.Fatal("LINE_TOKEN_URL is not set")
-	// }
 
 	return &AppConfig{
-		Port:                                 port,
-		NotionAPIKey:                         apiKey,
-		NotionKaimemoDatabaseInputID:         notionKaimemoDatabaseInputID,
-		NotionKaimemoDatabaseSummaryRecordID: notionKaimemoDatabaseSummaryRecordID,
-		AllowOrigins: []string{
-			"http://localhost:5173", "http://localhost:4173", frontEndUrl,
-		},
-		// LINEConfig: &LINEConfig{
-		// 	ClientID:     lineClientID,
-		// 	ClientSecret: lineClientSecret,
-		// 	JwtSecret:    lineJwtSecret,
-		// 	State:        lineState,
-		// 	RedirectURI:  lineRedirectURI,
-		// },
-		LINEConfig: &oauth2.Config{
-			ClientID:     lineClientID,
-			ClientSecret: lineClientSecret,
-			RedirectURL:  lineRedirectURI,
-			Scopes:       []string{"profile", "openid"},
-			Endpoint: oauth2.Endpoint{
-				AuthURL:  "https://access.line.me/oauth2/v2.1/authorize",
-				TokenURL: "https://api.line.me/oauth2/v2.1/token",
-			},
-		},
+		Port:                                 getEnvWithDefault("PORT", "3000"),
+		NotionAPIKey:                         os.Getenv("NOTION_API_KEY"),
+		NotionKaimemoDatabaseInputID:         os.Getenv("NOTION_KAIMEMO_DB_INPUT_ID"),
+		NotionKaimemoDatabaseSummaryRecordID: os.Getenv("NOTION_KAIMEMO_DB_SUMMARY_ID"),
+		AllowOrigins:                         []string{os.Getenv("ALLOW_ORIGINS")},
+		LINEConfig:                           lineConfig,
 	}
+}
+
+func getEnvWithDefault(key, defaultValue string) string {
+	if value := os.Getenv(key); value != "" {
+		return value
+	}
+	return defaultValue
 }

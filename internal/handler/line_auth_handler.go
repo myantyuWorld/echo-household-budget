@@ -34,7 +34,12 @@ func (a *lineAuthHandler) Login(c echo.Context) error {
 
 // Callback implements AuthHandler.
 func (a *lineAuthHandler) Callback(c echo.Context) error {
-	err := a.lineAuthService.Callback(c, c.QueryParam("code"))
+	code := c.QueryParam("code")
+	if code == "" {
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "Code is required"})
+	}
+
+	err := a.lineAuthService.Callback(c, code)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, fmt.Errorf("Callback Failed: %v", err))
 	}
