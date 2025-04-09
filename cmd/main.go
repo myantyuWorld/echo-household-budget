@@ -53,6 +53,7 @@ func main() {
 		})
 	})
 
+	// 買い物メモ関連のエンドポイント
 	kaimemo := e.Group("/kaimemo")
 	kaimemo.GET("", kaimemoHandler.FetchKaimemo)
 	kaimemo.POST("", kaimemoHandler.CreateKaimemo)
