@@ -54,7 +54,7 @@ func (l *lineAuthService) Callback(c echo.Context, code string) error {
 
 	// HACK : リファクタリング後、クッキーに保存できていない。ので、checkAuthで取得に失敗しているよう
 	if err := l.cookieManager.SetSessionCookie(c, sessionID); err != nil {
-		return errors.New("Failed to set session cookie")
+		return errors.New("failed to set session cookie")
 	}
 
 	// TODO : Redirectでフロントエンドに戻す
