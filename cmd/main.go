@@ -26,8 +26,9 @@ func main() {
 	e.Use(echomiddleware.Logger())
 	e.Use(echomiddleware.Recover())
 	e.Use(echomiddleware.CORSWithConfig(echomiddleware.CORSConfig{
-		AllowOrigins: appConfig.AllowOrigins,
-		AllowMethods: []string{http.MethodGet, http.MethodPost, http.MethodDelete},
+		AllowOrigins:     appConfig.AllowOrigins,
+		AllowMethods:     []string{http.MethodGet, http.MethodPost, http.MethodDelete},
+		AllowCredentials: true,
 	}))
 	e.Use(middleware.ErrorHandler())
 

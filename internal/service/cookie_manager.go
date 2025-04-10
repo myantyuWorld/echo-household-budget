@@ -25,7 +25,7 @@ func (cookieManager *cookieManager) SetSessionCookie(c echo.Context, sessionID s
 		Value:    sessionID,
 		Path:     "/",
 		HttpOnly: true,
-		Secure:   true,
+		Secure:   false,
 		SameSite: http.SameSiteLaxMode,
 		Expires:  time.Now().Add(24 * time.Hour),
 	})
@@ -38,7 +38,7 @@ func (cookieManager *cookieManager) ClearSessionCookie(c echo.Context) error {
 		Value:    "",
 		Path:     "/",
 		HttpOnly: true,
-		Secure:   true,
+		Secure:   false,
 		SameSite: http.SameSiteLaxMode,
 		Expires:  time.Now(),
 	})

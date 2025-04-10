@@ -154,7 +154,7 @@ func LoadConfig() *AppConfig {
 		NotionAPIKey:                         os.Getenv("NOTION_API_KEY"),
 		NotionKaimemoDatabaseInputID:         os.Getenv("NOTION_KAIMEMO_DB_INPUT_ID"),
 		NotionKaimemoDatabaseSummaryRecordID: os.Getenv("NOTION_KAIMEMO_DB_SUMMARY_ID"),
-		AllowOrigins:                         []string{os.Getenv("ALLOW_ORIGINS")},
+		AllowOrigins:                         []string{os.Getenv("ALLOW_ORIGINS"), "https://access.line.me/oauth2/v2.1/authorize"},
 		LINEConfig:                           lineConfig,
 	}
 }

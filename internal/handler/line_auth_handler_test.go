@@ -81,6 +81,7 @@ func TestAuthHandler_Callback(t *testing.T) {
 		code           string
 		setupMock      func()
 		expectedStatus int
+		expectedURL    string
 	}{
 		{
 			name: "successful callback",
@@ -88,7 +89,8 @@ func TestAuthHandler_Callback(t *testing.T) {
 			setupMock: func() {
 				mockLineAuthService.EXPECT().Callback(gomock.Any(), "valid_code").Return(nil)
 			},
-			expectedStatus: http.StatusOK,
+			expectedStatus: http.StatusFound,
+			expectedURL:    "http://localhost:5173/line/callback",
 		},
 		{
 			name: "missing code",
@@ -113,6 +115,9 @@ func TestAuthHandler_Callback(t *testing.T) {
 
 			assert.NoError(t, err)
 			assert.Equal(t, tt.expectedStatus, rec.Code)
+			if tt.expectedURL != "" {
+				assert.Equal(t, tt.expectedURL, rec.Header().Get("Location"))
+			}
 		})
 	}
 }

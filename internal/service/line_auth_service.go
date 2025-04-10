@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"template-echo-notion-integration/internal/repository"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/labstack/echo/v4"
 )
 
@@ -40,8 +41,7 @@ func (l *lineAuthService) Callback(c echo.Context, code string) error {
 	}
 
 	userInfo, err := l.repository.GetUserInfo(c.FormValue("code"))
-	fmt.Println(userInfo)
-
+	spew.Dump(userInfo)
 	//
 	// TODO : システムに登録されていなければ、ユーザー情報をDBに保存する
 	//
@@ -50,6 +50,7 @@ func (l *lineAuthService) Callback(c echo.Context, code string) error {
 	if err != nil {
 		return errors.New("Failed to create session")
 	}
+	spew.Dump(sessionID)
 
 	// HACK : リファクタリング後、クッキーに保存できていない。ので、checkAuthで取得に失敗しているよう
 	if err := l.cookieManager.SetSessionCookie(c, sessionID); err != nil {
@@ -62,16 +63,21 @@ func (l *lineAuthService) Callback(c echo.Context, code string) error {
 
 func (l *lineAuthService) CheckAuth(c echo.Context) error {
 	cookie, err := c.Cookie("session")
+	spew.Dump(cookie)
 	if err != nil {
 		return errors.New("Not logged in")
 	}
-	userID, exists := sessionStore[cookie.Value]
-	if !exists {
+	// sessionManagerを使用してセッションを取得
+	userID, err := l.sessionManager.GetSession(cookie.Value)
+	spew.Dump(userID)
+	if err != nil {
 		return errors.New("Session invalid")
 	}
 
 	// TODO : userIDをもとに、ユーザー情報を取得して返す
+	fmt.Println("===============")
 	fmt.Println(userID)
+	fmt.Println("===============")
 
 	return nil
 }

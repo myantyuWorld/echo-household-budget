@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"template-echo-notion-integration/internal/service"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/labstack/echo/v4"
 	"golang.org/x/oauth2"
 )
@@ -45,14 +46,16 @@ func (a *lineAuthHandler) Callback(c echo.Context) error {
 	}
 
 	// TODO : 下記はフロントエンド未実装のため、仮実装。本来はRedirectでフロントエンドのホーム画面にルーティングする
-	return c.JSON(http.StatusOK, map[string]string{"message": "Callback Success"})
+	return c.Redirect(http.StatusFound, "http://localhost:5173/line/callback")
+	// return c.JSON(http.StatusOK, map[string]string{"message": "Callback Success"})
 }
 
 func (a *lineAuthHandler) FetchMe(c echo.Context) error {
 	// TODO : userInfo, errを返すように修正する
 	err := a.lineAuthService.CheckAuth(c)
+	spew.Dump(err)
 	if err != nil {
-		return c.JSON(http.StatusUnauthorized, map[string]string{"error": "Not logged in"})
+		return c.JSON(http.StatusUnauthorized, fmt.Errorf("CheckAuth Failed: %v", err))
 	}
 
 	// TODO : Service層でユーザー情報を取得して返す
