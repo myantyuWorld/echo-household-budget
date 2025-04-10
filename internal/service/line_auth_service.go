@@ -17,9 +17,6 @@ type LineAuthService interface {
 	CheckAuth(c echo.Context) error
 }
 
-// セッション管理用の仮データ
-var sessionStore = make(map[string]string)
-
 type lineAuthService struct {
 	repository     repository.LineRepository
 	sessionManager SessionManager
@@ -41,6 +38,9 @@ func (l *lineAuthService) Callback(c echo.Context, code string) error {
 	}
 
 	userInfo, err := l.repository.GetUserInfo(c.FormValue("code"))
+	if err != nil {
+		return fmt.Errorf("failed to get user info: %w", err)
+	}
 	spew.Dump(userInfo)
 	//
 	// TODO : システムに登録されていなければ、ユーザー情報をDBに保存する
