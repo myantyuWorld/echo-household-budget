@@ -37,7 +37,7 @@ func NewLineAuthService(repository repository.LineRepository) LineAuthService {
 // Callback implements LineAuthService.
 func (l *lineAuthService) Callback(c echo.Context, code string) error {
 	if !l.repository.MatchState(c.QueryParam("state")) {
-		return errors.New("State does not match")
+		return errors.New("state does not match")
 	}
 
 	userInfo, err := l.repository.GetUserInfo(c.FormValue("code"))
@@ -48,7 +48,7 @@ func (l *lineAuthService) Callback(c echo.Context, code string) error {
 
 	sessionID, err := l.sessionManager.CreateSession(userInfo.UserID)
 	if err != nil {
-		return errors.New("Failed to create session")
+		return errors.New("failed to create session")
 	}
 	spew.Dump(sessionID)
 
@@ -65,13 +65,13 @@ func (l *lineAuthService) CheckAuth(c echo.Context) error {
 	cookie, err := c.Cookie("session")
 	spew.Dump(cookie)
 	if err != nil {
-		return errors.New("Not logged in")
+		return errors.New("not logged in")
 	}
 	// sessionManagerを使用してセッションを取得
 	userID, err := l.sessionManager.GetSession(cookie.Value)
 	spew.Dump(userID)
 	if err != nil {
-		return errors.New("Session invalid")
+		return errors.New("session invalid")
 	}
 
 	// TODO : userIDをもとに、ユーザー情報を取得して返す
@@ -88,7 +88,7 @@ func (l *lineAuthService) Login(c echo.Context) (string, error) {
 
 func (l *lineAuthService) Logout(c echo.Context) error {
 	if err := l.cookieManager.ClearSessionCookie(c); err != nil {
-		return errors.New("Failed to clear session cookie")
+		return errors.New("failed to clear session cookie")
 	}
 
 	return nil
