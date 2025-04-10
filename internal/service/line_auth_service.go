@@ -4,7 +4,7 @@ package service
 import (
 	"errors"
 	"fmt"
-	"template-echo-notion-integration/internal/repository"
+	"template-echo-notion-integration/internal/infrastructure/persistence/repository"
 
 	"github.com/davecgh/go-spew/spew"
 	"github.com/labstack/echo/v4"

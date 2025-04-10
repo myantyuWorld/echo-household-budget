@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"template-echo-notion-integration/config"
 	"template-echo-notion-integration/internal/handler"
+	"template-echo-notion-integration/internal/infrastructure/persistence/repository"
 	"template-echo-notion-integration/internal/middleware"
-	"template-echo-notion-integration/internal/repository"
 	"template-echo-notion-integration/internal/service"
 
 	"github.com/labstack/echo/v4"

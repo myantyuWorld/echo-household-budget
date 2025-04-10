@@ -2,8 +2,8 @@
 package service
 
 import (
+	"template-echo-notion-integration/internal/infrastructure/persistence/repository"
 	"template-echo-notion-integration/internal/model"
-	"template-echo-notion-integration/internal/repository"
 )
 
 type kaimemoService struct {

@@ -24,3 +24,17 @@ dev-down:
 
 exec-db:
 	docker compose exec db /bin/bash
+
+.PHONY: run test migrate-up migrate-down
+
+run:
+	go run cmd/main.go
+
+test:
+	go test -v ./...
+
+migrate-up:
+	go run cmd/migrate/main.go up
+
+migrate-down:
+	go run cmd/migrate/main.go down
