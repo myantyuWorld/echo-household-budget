@@ -3,9 +3,10 @@ package household
 
 // UserAccount はユーザーアカウントを表すドメインモデルです
 type UserAccount struct {
-	ID     uint       `json:"id"`
-	UserID LINEUserID `json:"user_id"`
-	Name   string     `json:"name"`
+	ID         uint       `json:"id"`
+	UserID     LINEUserID `json:"user_id"`
+	Name       string     `json:"name"`
+	PictureURL string     `json:"picture_url"`
 }
 
 type LINEUserInfo struct {
@@ -23,10 +24,11 @@ type UserAccountRepository interface {
 
 type LINEUserID string
 
-func NewUserAccount(lineUserID LINEUserID, name string) *UserAccount {
+func NewUserAccount(lineUserInfo *LINEUserInfo) *UserAccount {
 	return &UserAccount{
-		UserID: lineUserID,
-		Name:   name,
+		UserID:     lineUserInfo.UserID,
+		Name:       lineUserInfo.DisplayName,
+		PictureURL: lineUserInfo.PictureURL,
 	}
 }
 

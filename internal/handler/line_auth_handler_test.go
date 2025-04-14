@@ -1,26 +1,32 @@
 package handler
 
 import (
+	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
-	service "template-echo-notion-integration/internal/mock/service"
-
 	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
-	"golang.org/x/oauth2"
+
+	"template-echo-notion-integration/config"
+	"template-echo-notion-integration/internal/domain/household"
+	serviceMock "template-echo-notion-integration/internal/mock/service"
 )
 
 func TestAuthHandler_Login(t *testing.T) {
 	ctrl := gomock.NewController(t)
+	appConfig := &config.AppConfig{
+		LINELoginFrontendCallbackURL: "http://localhost:5173/line/callback",
+	}
 	defer ctrl.Finish()
 
-	mockLineAuthService := service.NewMockLineAuthService(ctrl)
+	mockLineAuthService := serviceMock.NewMockLineAuthService(ctrl)
 	handler := &lineAuthHandler{
 		lineAuthService: mockLineAuthService,
-		lineConfig:      &oauth2.Config{},
+		appConfig:       appConfig,
 	}
 
 	tests := []struct {
@@ -68,12 +74,15 @@ func TestAuthHandler_Login(t *testing.T) {
 
 func TestAuthHandler_Callback(t *testing.T) {
 	ctrl := gomock.NewController(t)
+	appConfig := &config.AppConfig{
+		LINELoginFrontendCallbackURL: "http://localhost:5173/line/callback",
+	}
 	defer ctrl.Finish()
 
-	mockLineAuthService := service.NewMockLineAuthService(ctrl)
+	mockLineAuthService := serviceMock.NewMockLineAuthService(ctrl)
 	handler := &lineAuthHandler{
 		lineAuthService: mockLineAuthService,
-		lineConfig:      &oauth2.Config{},
+		appConfig:       appConfig,
 	}
 
 	tests := []struct {
@@ -132,30 +141,64 @@ func TestAuthHandler_Callback(t *testing.T) {
 
 func TestAuthHandler_FetchMe(t *testing.T) {
 	ctrl := gomock.NewController(t)
-	defer ctrl.Finish()
-
-	mockLineAuthService := service.NewMockLineAuthService(ctrl)
-	handler := &lineAuthHandler{
-		lineAuthService: mockLineAuthService,
-		lineConfig:      &oauth2.Config{},
+	appConfig := &config.AppConfig{
+		LINELoginFrontendCallbackURL: "http://localhost:5173/line/callback",
 	}
+	defer ctrl.Finish()
 
 	tests := []struct {
 		name           string
-		setupMock      func()
+		setupMock      func(*serviceMock.MockLineAuthService)
+		setupContext   func(*echo.Context)
 		expectedStatus int
+		expectedBody   *household.UserAccount
 	}{
 		{
-			name: "authenticated user",
-			setupMock: func() {
-				mockLineAuthService.EXPECT().CheckAuth(gomock.Any()).Return(nil)
+			name: "認証済みユーザーの情報取得に成功",
+			setupMock: func(m *serviceMock.MockLineAuthService) {
+				m.EXPECT().CheckAuth(gomock.Any()).Return(&household.UserAccount{
+					ID:         1,
+					UserID:     "user123",
+					Name:       "テストユーザー",
+					PictureURL: "https://example.com/picture.jpg",
+				}, nil)
+			},
+			setupContext: func(c *echo.Context) {
+				cookie := &http.Cookie{
+					Name:  "session",
+					Value: "valid_session",
+				}
+				(*c).Request().AddCookie(cookie)
 			},
 			expectedStatus: http.StatusOK,
+			expectedBody: &household.UserAccount{
+				ID:         1,
+				UserID:     "user123",
+				Name:       "テストユーザー",
+				PictureURL: "https://example.com/picture.jpg",
+			},
 		},
 		{
-			name: "unauthenticated user",
-			setupMock: func() {
-				mockLineAuthService.EXPECT().CheckAuth(gomock.Any()).Return(assert.AnError)
+			name: "未認証の場合",
+			setupMock: func(m *serviceMock.MockLineAuthService) {
+				m.EXPECT().CheckAuth(gomock.Any()).Return(nil, errors.New("not logged in"))
+			},
+			setupContext: func(c *echo.Context) {
+				// セッションクッキーなし
+			},
+			expectedStatus: http.StatusUnauthorized,
+		},
+		{
+			name: "認証チェックに失敗",
+			setupMock: func(m *serviceMock.MockLineAuthService) {
+				m.EXPECT().CheckAuth(gomock.Any()).Return(nil, errors.New("failed to check auth"))
+			},
+			setupContext: func(c *echo.Context) {
+				cookie := &http.Cookie{
+					Name:  "session",
+					Value: "invalid_session",
+				}
+				(*c).Request().AddCookie(cookie)
 			},
 			expectedStatus: http.StatusUnauthorized,
 		},
@@ -163,29 +206,46 @@ func TestAuthHandler_FetchMe(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			mockService := serviceMock.NewMockLineAuthService(ctrl)
+			tt.setupMock(mockService)
+
+			handler := NewLineAuthHandler(mockService, appConfig)
+
 			e := echo.New()
 			req := httptest.NewRequest(http.MethodGet, "/line/me", nil)
 			rec := httptest.NewRecorder()
 			c := e.NewContext(req, rec)
 
-			tt.setupMock()
+			if tt.setupContext != nil {
+				tt.setupContext(&c)
+			}
 
 			err := handler.FetchMe(c)
 
 			assert.NoError(t, err)
 			assert.Equal(t, tt.expectedStatus, rec.Code)
+
+			if tt.expectedBody != nil {
+				var response household.UserAccount
+				err := json.NewDecoder(rec.Body).Decode(&response)
+				assert.NoError(t, err)
+				assert.Equal(t, *tt.expectedBody, response)
+			}
 		})
 	}
 }
 
 func TestAuthHandler_Logout(t *testing.T) {
 	ctrl := gomock.NewController(t)
+	appConfig := &config.AppConfig{
+		LINELoginFrontendCallbackURL: "http://localhost:5173/line/callback",
+	}
 	defer ctrl.Finish()
 
-	mockLineAuthService := service.NewMockLineAuthService(ctrl)
+	mockLineAuthService := serviceMock.NewMockLineAuthService(ctrl)
 	handler := &lineAuthHandler{
 		lineAuthService: mockLineAuthService,
-		lineConfig:      &oauth2.Config{},
+		appConfig:       appConfig,
 	}
 
 	e := echo.New()

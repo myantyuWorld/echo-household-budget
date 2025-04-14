@@ -1,7 +1,9 @@
 //go:generate mockgen -source=$GOFILE -destination=../mock/$GOPACKAGE/mock_$GOFILE -package=mock
 package service
 
-import "template-echo-notion-integration/internal/domain/household"
+import (
+	"template-echo-notion-integration/internal/domain/household"
+)
 
 type UserAccountService interface {
 	CreateUserAccount(lineUserInfo *household.LINEUserInfo) error
@@ -23,7 +25,7 @@ func (s *userAccountService) IsDuplicateUserAccount(lineUserID household.LINEUse
 }
 
 func (s *userAccountService) CreateUserAccount(lineUserInfo *household.LINEUserInfo) error {
-	userAccount := household.NewUserAccount(lineUserInfo.UserID, lineUserInfo.DisplayName)
+	userAccount := household.NewUserAccount(lineUserInfo)
 	return s.repository.Create(userAccount)
 }
 

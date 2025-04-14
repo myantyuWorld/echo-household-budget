@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"template-echo-notion-integration/config"
+	domainService "template-echo-notion-integration/internal/domain/service"
 	"template-echo-notion-integration/internal/handler"
 	"template-echo-notion-integration/internal/infrastructure/persistence/repository"
 	"template-echo-notion-integration/internal/middleware"
@@ -39,14 +40,16 @@ func main() {
 		appConfig.NotionKaimemoDatabaseSummaryRecordID,
 	)
 	lineRepository := repository.NewLineRepository(appConfig.LINEConfig)
+	userAccountRepository := repository.NewUserAccountRepository(nil)
+	userAccountService := domainService.NewUserAccountService(userAccountRepository)
 
 	// サービスの初期化
 	kaimemoService := service.NewKaimemoService(kaimemoRepository)
-	lineAuthService := service.NewLineAuthService(lineRepository)
+	lineAuthService := service.NewLineAuthService(lineRepository, userAccountRepository, userAccountService)
 
 	// ハンドラーの初期化
 	kaimemoHandler := handler.NewKaimemoHandler(kaimemoService)
-	lineAuthHandler := handler.NewLineAuthHandler(lineAuthService, appConfig.LINEConfig)
+	lineAuthHandler := handler.NewLineAuthHandler(lineAuthService, appConfig)
 
 	e.GET("/health", func(c echo.Context) error {
 		return c.JSON(http.StatusOK, map[string]string{

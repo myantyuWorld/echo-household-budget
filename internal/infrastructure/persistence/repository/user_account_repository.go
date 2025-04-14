@@ -1,4 +1,3 @@
-//go:generate mockgen -source=$GOFILE -destination=../mock/$GOPACKAGE/mock_$GOFILE -package=mock
 package repository
 
 import (
@@ -21,9 +20,10 @@ func (r *UserAccountRepository) FindByLINEUserID(userID household.LINEUserID) (*
 	}
 
 	return &household.UserAccount{
-		ID:     userAccount.ID,
-		UserID: household.LINEUserID(userAccount.UserID),
-		Name:   userAccount.Name,
+		ID:         userAccount.ID,
+		UserID:     household.LINEUserID(userAccount.UserID),
+		Name:       userAccount.Name,
+		PictureURL: userAccount.PictureURL,
 	}, nil
 }
 
@@ -37,8 +37,9 @@ func NewUserAccountRepository(db *gorm.DB) household.UserAccountRepository {
 // Create は新しいユーザーアカウントを作成します
 func (r *UserAccountRepository) Create(userAccount *household.UserAccount) error {
 	model := &models.UserAccount{
-		UserID: string(userAccount.UserID),
-		Name:   userAccount.Name,
+		UserID:     string(userAccount.UserID),
+		Name:       userAccount.Name,
+		PictureURL: userAccount.PictureURL,
 	}
 
 	err := r.db.Transaction(func(tx *gorm.DB) error {

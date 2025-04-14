@@ -130,6 +130,7 @@ type AppConfig struct {
 	NotionKaimemoDatabaseSummaryRecordID string
 	AllowOrigins                         []string
 	LINEConfig                           *oauth2.Config
+	LINELoginFrontendCallbackURL         string
 }
 
 func LoadConfig() *AppConfig {
@@ -156,6 +157,7 @@ func LoadConfig() *AppConfig {
 		NotionKaimemoDatabaseSummaryRecordID: os.Getenv("NOTION_KAIMEMO_DB_SUMMARY_ID"),
 		AllowOrigins:                         []string{os.Getenv("ALLOW_ORIGINS"), "https://access.line.me/oauth2/v2.1/authorize"},
 		LINEConfig:                           lineConfig,
+		LINELoginFrontendCallbackURL:         os.Getenv("LINE_LOGIN_FRONTEND_CALLBACK_URL"),
 	}
 }
 
