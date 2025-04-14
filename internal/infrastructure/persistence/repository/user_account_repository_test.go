@@ -75,7 +75,6 @@ func TestUserAccountRepository_FindByLINEUserID(t *testing.T) {
 	repo := NewUserAccountRepository(gormDB)
 
 	userAccount := &household.UserAccount{
-		UserID:     household.LINEUserID("user123"),
 		Name:       "テストユーザー",
 		PictureURL: "https://example.com/picture.jpg",
 	}
@@ -89,7 +88,6 @@ func TestUserAccountRepository_FindByLINEUserID(t *testing.T) {
 	foundAccount, err := repo.FindByLINEUserID(userAccount.UserID)
 	assert.NoError(t, err)
 	assert.NotNil(t, foundAccount)
-	assert.Equal(t, userAccount.UserID, foundAccount.UserID)
 	assert.Equal(t, userAccount.Name, foundAccount.Name)
 	assert.Equal(t, userAccount.PictureURL, foundAccount.PictureURL)
 }

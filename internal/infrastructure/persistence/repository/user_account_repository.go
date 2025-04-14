@@ -21,7 +21,6 @@ func (r *UserAccountRepository) FindByLINEUserID(userID household.LINEUserID) (*
 
 	return &household.UserAccount{
 		ID:         userAccount.ID,
-		UserID:     household.LINEUserID(userAccount.UserID),
 		Name:       userAccount.Name,
 		PictureURL: userAccount.PictureURL,
 	}, nil
