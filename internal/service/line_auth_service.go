@@ -4,6 +4,8 @@ package service
 import (
 	"errors"
 	"fmt"
+	"template-echo-notion-integration/internal/domain/household"
+	"template-echo-notion-integration/internal/domain/service"
 	"template-echo-notion-integration/internal/infrastructure/persistence/repository"
 
 	"github.com/davecgh/go-spew/spew"
@@ -18,9 +20,10 @@ type LineAuthService interface {
 }
 
 type lineAuthService struct {
-	repository     repository.LineRepository
-	sessionManager SessionManager
-	cookieManager  CookieManager
+	repository         repository.LineRepository
+	sessionManager     SessionManager
+	cookieManager      CookieManager
+	userAccountService service.UserAccountService
 }
 
 func NewLineAuthService(repository repository.LineRepository) LineAuthService {
@@ -42,9 +45,17 @@ func (l *lineAuthService) Callback(c echo.Context, code string) error {
 		return fmt.Errorf("failed to get user info: %w", err)
 	}
 	spew.Dump(userInfo)
-	//
-	// TODO : システムに登録されていなければ、ユーザー情報をDBに保存する
-	//
+	lineUserInfo := household.NewLINEUserInfo(household.LINEUserID(userInfo.UserID), userInfo.DisplayName, userInfo.PictureURL)
+	result, err := l.userAccountService.IsDuplicateUserAccount(lineUserInfo.UserID)
+	if err != nil {
+		return fmt.Errorf("failed to check if user account exists: %w", err)
+	}
+	if !result {
+		err = l.userAccountService.CreateUserAccount(lineUserInfo)
+		if err != nil {
+			return fmt.Errorf("failed to create user account: %w", err)
+		}
+	}
 
 	sessionID, err := l.sessionManager.CreateSession(userInfo.UserID)
 	if err != nil {
@@ -52,12 +63,10 @@ func (l *lineAuthService) Callback(c echo.Context, code string) error {
 	}
 	spew.Dump(sessionID)
 
-	// HACK : リファクタリング後、クッキーに保存できていない。ので、checkAuthで取得に失敗しているよう
 	if err := l.cookieManager.SetSessionCookie(c, sessionID); err != nil {
 		return errors.New("failed to set session cookie")
 	}
 
-	// TODO : Redirectでフロントエンドに戻す
 	return nil
 }
 

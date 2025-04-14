@@ -100,6 +100,14 @@ func TestAuthHandler_Callback(t *testing.T) {
 			},
 			expectedStatus: http.StatusBadRequest,
 		},
+		{
+			name: "callback failed",
+			code: "valid_code",
+			setupMock: func() {
+				mockLineAuthService.EXPECT().Callback(gomock.Any(), "valid_code").Return(assert.AnError)
+			},
+			expectedStatus: http.StatusInternalServerError,
+		},
 	}
 
 	for _, tt := range tests {
