@@ -3,6 +3,8 @@ package service
 
 import (
 	"template-echo-notion-integration/internal/domain/household"
+
+	"gorm.io/gorm"
 )
 
 type UserAccountService interface {
@@ -18,6 +20,9 @@ type userAccountService struct {
 func (s *userAccountService) IsDuplicateUserAccount(lineUserID household.LINEUserID) (bool, error) {
 	account, err := s.repository.FindByLINEUserID(lineUserID)
 	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return false, nil
+		}
 		return false, err
 	}
 

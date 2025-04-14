@@ -23,6 +23,12 @@ func main() {
 	// Echoインスタンスの作成
 	e := echo.New()
 
+	// データベース接続の設定
+	db, err := config.NewDBConnection(appConfig.DatabaseConfig)
+	if err != nil {
+		e.Logger.Fatal(err)
+	}
+
 	// ミドルウェアの設定
 	e.Use(echomiddleware.Logger())
 	e.Use(echomiddleware.Recover())
@@ -40,7 +46,7 @@ func main() {
 		appConfig.NotionKaimemoDatabaseSummaryRecordID,
 	)
 	lineRepository := repository.NewLineRepository(appConfig.LINEConfig)
-	userAccountRepository := repository.NewUserAccountRepository(nil)
+	userAccountRepository := repository.NewUserAccountRepository(db)
 	userAccountService := domainService.NewUserAccountService(userAccountRepository)
 
 	// サービスの初期化

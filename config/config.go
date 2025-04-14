@@ -1,12 +1,16 @@
 package config
 
 import (
+	"fmt"
 	"log"
 	"os"
 	"template-echo-notion-integration/internal/shared/errors"
 
 	"github.com/joho/godotenv"
 	"golang.org/x/oauth2"
+	"gorm.io/driver/postgres"
+	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 )
 
 // Config はアプリケーションの設定を表す構造体
@@ -131,6 +135,7 @@ type AppConfig struct {
 	AllowOrigins                         []string
 	LINEConfig                           *oauth2.Config
 	LINELoginFrontendCallbackURL         string
+	DatabaseConfig                       *DatabaseConfig
 }
 
 func LoadConfig() *AppConfig {
@@ -150,6 +155,15 @@ func LoadConfig() *AppConfig {
 		},
 	}
 
+	// データベース設定
+	dbConfig := &DatabaseConfig{
+		Host:     os.Getenv("DB_HOST"),
+		Port:     os.Getenv("DB_PORT"),
+		User:     os.Getenv("DB_USER"),
+		Password: os.Getenv("DB_PASSWORD"),
+		DBName:   os.Getenv("DB_NAME"),
+	}
+
 	return &AppConfig{
 		Port:                                 getEnvWithDefault("PORT", "3000"),
 		NotionAPIKey:                         os.Getenv("NOTION_API_KEY"),
@@ -158,6 +172,7 @@ func LoadConfig() *AppConfig {
 		AllowOrigins:                         []string{os.Getenv("ALLOW_ORIGINS"), "https://access.line.me/oauth2/v2.1/authorize"},
 		LINEConfig:                           lineConfig,
 		LINELoginFrontendCallbackURL:         os.Getenv("LINE_LOGIN_FRONTEND_CALLBACK_URL"),
+		DatabaseConfig:                       dbConfig,
 	}
 }
 
@@ -166,4 +181,24 @@ func getEnvWithDefault(key, defaultValue string) string {
 		return value
 	}
 	return defaultValue
+}
+
+// NewDBConnection はデータベース接続を作成する
+func NewDBConnection(config *DatabaseConfig) (*gorm.DB, error) {
+	dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=disable",
+		config.Host,
+		config.User,
+		config.Password,
+		config.DBName,
+		config.Port,
+	)
+
+	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
+		Logger: logger.Default.LogMode(logger.Info),
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to connect database: %w", err)
+	}
+
+	return db, nil
 }
