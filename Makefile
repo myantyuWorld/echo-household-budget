@@ -24,3 +24,33 @@ dev-down:
 
 exec-db:
 	docker compose exec db /bin/bash
+
+.PHONY: run test migrate-up migrate-down build logs ps db-connect db-logs
+
+run:
+	go run cmd/main.go
+
+test:
+	go test -v ./...
+
+migrate-up:
+	go run cmd/migrate/main.go up
+
+migrate-down:
+	go run cmd/migrate/main.go down
+
+build:
+	docker compose build
+
+logs:
+	docker compose logs -f
+
+ps:
+	docker compose ps
+
+# データベース関連のコマンド
+db-connect:
+	docker exec -it echo-household-budget_db_1 psql -U postgres -d echo-household-budget
+
+db-logs:
+	docker compose logs -f db

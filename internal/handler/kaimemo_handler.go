@@ -8,7 +8,6 @@ import (
 	"template-echo-notion-integration/internal/model"
 	"template-echo-notion-integration/internal/service"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/gorilla/websocket"
 	"github.com/labstack/echo/v4"
 )
@@ -38,7 +37,6 @@ func (k *kaimemoHandler) WebsocketTelegraph(c echo.Context) error {
 		return err
 	}
 	clients[conn] = true
-	spew.Dump(clients)
 	defer conn.Close()
 
 	// ここで買い物一覧送信
@@ -64,7 +62,6 @@ func (k *kaimemoHandler) WebsocketTelegraph(c echo.Context) error {
 			log.Println("JSONデコードエラー:", err)
 			continue
 		}
-		spew.Dump(request)
 
 		if request.MethodType == "1" {
 			if err := k.service.CreateKaimemo(model.CreateKaimemoRequest{
