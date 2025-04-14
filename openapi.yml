@@ -222,7 +222,13 @@ components:
     LineMe:
       type: object
       properties:
-        displayName:
+        id:
+          type: integer
+        userID:
+          type: string
+        name:
+          type: string
+        pictureURL:
           type: string
     KaimemoSummary:
       type: object
