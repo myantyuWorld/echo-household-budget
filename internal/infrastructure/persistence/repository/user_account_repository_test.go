@@ -21,8 +21,7 @@ func TestUserAccountRepository_Create(t *testing.T) {
 		PictureURL: "https://example.com/picture.jpg",
 	}
 	householdBook := &models.HouseholdBook{
-		UserID: string(userAccount.UserID),
-		Title:  "初期家計簿",
+		Title: "初期家計簿",
 	}
 
 	// SQLクエリのモック
@@ -32,13 +31,13 @@ func TestUserAccountRepository_Create(t *testing.T) {
 		WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(1))
 
 	mock.ExpectQuery(`INSERT INTO "household_books"`).
-		WithArgs(sqlmock.AnyArg(), sqlmock.AnyArg(), householdBook.UserID, householdBook.Title, sqlmock.AnyArg()).
+		WithArgs(sqlmock.AnyArg(), sqlmock.AnyArg(), householdBook.Title, sqlmock.AnyArg()).
 		WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(1))
 	mock.ExpectCommit()
 
 	err := repo.Create(userAccount)
 	assert.NoError(t, err)
-	assert.Equal(t, uint(1), userAccount.ID)
+	assert.Equal(t, domainmodel.UserID(1), userAccount.ID)
 }
 
 func TestUserAccountRepository_Delete(t *testing.T) {
@@ -52,7 +51,7 @@ func TestUserAccountRepository_Delete(t *testing.T) {
 		WillReturnResult(sqlmock.NewResult(1, 1))
 	mock.ExpectCommit()
 
-	err := repo.Delete(1)
+	err := repo.Delete(domainmodel.UserID(1))
 	assert.NoError(t, err)
 }
 
@@ -67,7 +66,7 @@ func TestUserAccountRepository_NotFound(t *testing.T) {
 		WillReturnResult(sqlmock.NewResult(0, 0))
 	mock.ExpectCommit()
 
-	err := repo.Delete(999)
+	err := repo.Delete(domainmodel.UserID(999))
 	assert.Equal(t, gorm.ErrRecordNotFound, err)
 }
 

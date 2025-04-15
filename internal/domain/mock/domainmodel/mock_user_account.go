@@ -55,7 +55,7 @@ func (mr *MockUserAccountRepositoryMockRecorder) Create(userAccount any) *gomock
 }
 
 // Delete mocks base method.
-func (m *MockUserAccountRepository) Delete(id uint) error {
+func (m *MockUserAccountRepository) Delete(id domainmodel.UserID) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Delete", id)
 	ret0, _ := ret[0].(error)

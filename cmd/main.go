@@ -47,7 +47,9 @@ func main() {
 	)
 	lineRepository := repository.NewLineRepository(appConfig.LINEConfig)
 	userAccountRepository := repository.NewUserAccountRepository(db)
-	userAccountService := domainService.NewUserAccountService(userAccountRepository)
+	categoryRepository := repository.NewCategoryRepository(db)
+	houseHoldRepository := repository.NewHouseHoldRepository(db)
+	userAccountService := domainService.NewUserAccountService(userAccountRepository, categoryRepository, houseHoldRepository)
 
 	// サービスの初期化
 	kaimemoService := usecase.NewKaimemoService(kaimemoRepository)

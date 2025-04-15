@@ -157,7 +157,7 @@ func TestAuthHandler_FetchMe(t *testing.T) {
 			name: "認証済みユーザーの情報取得に成功",
 			setupMock: func(m *serviceMock.MockLineAuthService) {
 				m.EXPECT().CheckAuth(gomock.Any()).Return(&domainmodel.UserAccount{
-					ID:         1,
+					ID:         domainmodel.UserID(1),
 					UserID:     "user123",
 					Name:       "テストユーザー",
 					PictureURL: "https://example.com/picture.jpg",
@@ -172,7 +172,7 @@ func TestAuthHandler_FetchMe(t *testing.T) {
 			},
 			expectedStatus: http.StatusOK,
 			expectedBody: &domainmodel.UserAccount{
-				ID:         1,
+				ID:         domainmodel.UserID(1),
 				UserID:     "user123",
 				Name:       "テストユーザー",
 				PictureURL: "https://example.com/picture.jpg",

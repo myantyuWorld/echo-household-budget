@@ -20,7 +20,7 @@ func (r *UserAccountRepository) FindByLINEUserID(userID domainmodel.LINEUserID) 
 	}
 
 	return &domainmodel.UserAccount{
-		ID:         userAccount.ID,
+		ID:         domainmodel.UserID(userAccount.ID),
 		Name:       userAccount.Name,
 		PictureURL: userAccount.PictureURL,
 	}, nil
@@ -49,8 +49,7 @@ func (r *UserAccountRepository) Create(userAccount *domainmodel.UserAccount) err
 
 		// 家計簿レコードの作成
 		householdBook := &models.HouseholdBook{
-			UserID: model.UserID,
-			Title:  "初期家計簿",
+			Title: "初期家計簿",
 		}
 
 		if err := tx.Create(householdBook).Error; err != nil {
@@ -65,12 +64,12 @@ func (r *UserAccountRepository) Create(userAccount *domainmodel.UserAccount) err
 	}
 
 	// 作成したモデルのIDをドメインモデルに設定
-	userAccount.ID = model.ID
+	userAccount.ID = domainmodel.UserID(model.ID)
 	return nil
 }
 
 // Delete は指定されたIDのユーザーアカウントを削除します
-func (r *UserAccountRepository) Delete(id uint) error {
+func (r *UserAccountRepository) Delete(id domainmodel.UserID) error {
 	result := r.db.Delete(&models.UserAccount{}, id)
 	if result.Error != nil {
 		return result.Error

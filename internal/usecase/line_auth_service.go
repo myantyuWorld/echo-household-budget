@@ -53,6 +53,7 @@ func (l *lineAuthService) Callback(c echo.Context, code string) error {
 	if err != nil {
 		return fmt.Errorf("failed to check if user account exists: %w", err)
 	}
+
 	if !result {
 		err = l.userAccountService.CreateUserAccount(lineUserInfo)
 		if err != nil {

@@ -18,7 +18,7 @@ func TestUserAccountService_CreateUserAccount(t *testing.T) {
 	tests := []struct {
 		name          string
 		lineUserInfo  *domainmodel.LINEUserInfo
-		mockSetup     func(*mock.MockUserAccountRepository)
+		mockSetup     func(*mock.MockUserAccountRepository, *mock.MockCategoryRepository, *mock.MockHouseHoldRepository)
 		expectedError error
 	}{
 		{
@@ -28,8 +28,11 @@ func TestUserAccountService_CreateUserAccount(t *testing.T) {
 				DisplayName: "テストユーザー",
 				PictureURL:  "https://example.com/photo.jpg",
 			},
-			mockSetup: func(m *mock.MockUserAccountRepository) {
+			mockSetup: func(m *mock.MockUserAccountRepository, m1 *mock.MockCategoryRepository, m2 *mock.MockHouseHoldRepository) {
 				m.EXPECT().Create(gomock.Any()).Return(nil)
+				m1.EXPECT().CreateHouseHoldCategory(gomock.Any()).Return(nil).Times(2)
+				m2.EXPECT().Create(gomock.Any()).Return(nil)
+				m2.EXPECT().CreateUserHouseHold(gomock.Any()).Return(nil)
 			},
 			expectedError: nil,
 		},
@@ -38,9 +41,11 @@ func TestUserAccountService_CreateUserAccount(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			mockRepo := mock.NewMockUserAccountRepository(ctrl)
-			tt.mockSetup(mockRepo)
+			mockCategoryRepo := mock.NewMockCategoryRepository(ctrl)
+			mockHouseHoldRepo := mock.NewMockHouseHoldRepository(ctrl)
+			tt.mockSetup(mockRepo, mockCategoryRepo, mockHouseHoldRepo)
 
-			service := NewUserAccountService(mockRepo)
+			service := NewUserAccountService(mockRepo, mockCategoryRepo, mockHouseHoldRepo)
 			err := service.CreateUserAccount(tt.lineUserInfo)
 
 			if tt.expectedError != nil {
@@ -60,16 +65,16 @@ func TestUserAccountService_IsDuplicateUserAccount(t *testing.T) {
 	tests := []struct {
 		name           string
 		lineUserID     domainmodel.LINEUserID
-		mockSetup      func(*mock.MockUserAccountRepository)
+		mockSetup      func(*mock.MockUserAccountRepository, *mock.MockCategoryRepository, *mock.MockHouseHoldRepository)
 		expectedResult bool
 		expectedError  error
 	}{
 		{
 			name:       "ユーザーが存在する場合",
 			lineUserID: domainmodel.LINEUserID("existing_user"),
-			mockSetup: func(m *mock.MockUserAccountRepository) {
+			mockSetup: func(m *mock.MockUserAccountRepository, m1 *mock.MockCategoryRepository, m2 *mock.MockHouseHoldRepository) {
 				m.EXPECT().FindByLINEUserID(domainmodel.LINEUserID("existing_user")).Return(&domainmodel.UserAccount{
-					ID:     1,
+					ID:     domainmodel.UserID(1),
 					UserID: domainmodel.LINEUserID("existing_user"),
 					Name:   "既存ユーザー",
 				}, nil)
@@ -80,7 +85,7 @@ func TestUserAccountService_IsDuplicateUserAccount(t *testing.T) {
 		{
 			name:       "ユーザーが存在しない場合",
 			lineUserID: domainmodel.LINEUserID("non_existent_user"),
-			mockSetup: func(m *mock.MockUserAccountRepository) {
+			mockSetup: func(m *mock.MockUserAccountRepository, m1 *mock.MockCategoryRepository, m2 *mock.MockHouseHoldRepository) {
 				m.EXPECT().FindByLINEUserID(domainmodel.LINEUserID("non_existent_user")).Return(nil, nil)
 			},
 			expectedResult: false,
@@ -89,7 +94,7 @@ func TestUserAccountService_IsDuplicateUserAccount(t *testing.T) {
 		{
 			name:       "エラーが発生した場合",
 			lineUserID: domainmodel.LINEUserID("error_user"),
-			mockSetup: func(m *mock.MockUserAccountRepository) {
+			mockSetup: func(m *mock.MockUserAccountRepository, m1 *mock.MockCategoryRepository, m2 *mock.MockHouseHoldRepository) {
 				m.EXPECT().FindByLINEUserID(domainmodel.LINEUserID("error_user")).Return(nil, errors.New("database error"))
 			},
 			expectedResult: false,
@@ -100,9 +105,11 @@ func TestUserAccountService_IsDuplicateUserAccount(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			mockRepo := mock.NewMockUserAccountRepository(ctrl)
-			tt.mockSetup(mockRepo)
+			mockCategoryRepo := mock.NewMockCategoryRepository(ctrl)
+			mockHouseHoldRepo := mock.NewMockHouseHoldRepository(ctrl)
+			tt.mockSetup(mockRepo, mockCategoryRepo, mockHouseHoldRepo)
 
-			service := NewUserAccountService(mockRepo)
+			service := NewUserAccountService(mockRepo, mockCategoryRepo, mockHouseHoldRepo)
 			result, err := service.IsDuplicateUserAccount(tt.lineUserID)
 
 			assert.Equal(t, tt.expectedResult, result)

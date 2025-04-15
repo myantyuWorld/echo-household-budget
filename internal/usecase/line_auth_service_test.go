@@ -162,7 +162,7 @@ func TestLineAuthService_CheckAuth(t *testing.T) {
 			name: "認証済みユーザーの情報取得に成功",
 			setupMock: func(ua *mockUserAccountRepository.MockUserAccountRepository) {
 				ua.EXPECT().FindByLINEUserID(domainmodel.LINEUserID("user123")).Return(&domainmodel.UserAccount{
-					ID:         1,
+					ID:         domainmodel.UserID(1),
 					UserID:     "user123",
 					Name:       "テストユーザー",
 					PictureURL: "https://example.com/picture.jpg",
@@ -176,7 +176,7 @@ func TestLineAuthService_CheckAuth(t *testing.T) {
 				(*c).Request().AddCookie(cookie)
 			},
 			expectedUser: &domainmodel.UserAccount{
-				ID:         1,
+				ID:         domainmodel.UserID(1),
 				UserID:     "user123",
 				Name:       "テストユーザー",
 				PictureURL: "https://example.com/picture.jpg",
