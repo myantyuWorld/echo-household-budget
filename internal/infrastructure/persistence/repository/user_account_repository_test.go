@@ -1,9 +1,10 @@
 package repository
 
 import (
-	"template-echo-notion-integration/internal/domain/household"
-	"template-echo-notion-integration/internal/infrastructure/persistence/models"
 	"testing"
+
+	domainmodel "echo-household-budget/internal/domain/model"
+	"echo-household-budget/internal/infrastructure/persistence/models"
 
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/stretchr/testify/assert"
@@ -14,7 +15,7 @@ func TestUserAccountRepository_Create(t *testing.T) {
 	gormDB, mock := setupTest(t)
 	repo := NewUserAccountRepository(gormDB)
 
-	userAccount := &household.UserAccount{
+	userAccount := &domainmodel.UserAccount{
 		UserID:     "user123",
 		Name:       "テストユーザー",
 		PictureURL: "https://example.com/picture.jpg",
@@ -74,7 +75,7 @@ func TestUserAccountRepository_FindByLINEUserID(t *testing.T) {
 	gormDB, mock := setupTest(t)
 	repo := NewUserAccountRepository(gormDB)
 
-	userAccount := &household.UserAccount{
+	userAccount := &domainmodel.UserAccount{
 		Name:       "テストユーザー",
 		PictureURL: "https://example.com/picture.jpg",
 	}
@@ -102,7 +103,7 @@ func TestUserAccountRepository_FindByLINEUserID_NotFound(t *testing.T) {
 		WithArgs("non_existent_user", 1).
 		WillReturnError(gorm.ErrRecordNotFound)
 
-	foundAccount, err := repo.FindByLINEUserID(household.LINEUserID("non_existent_user"))
+	foundAccount, err := repo.FindByLINEUserID(domainmodel.LINEUserID("non_existent_user"))
 	assert.Error(t, err)
 	assert.Nil(t, foundAccount)
 	assert.Equal(t, gorm.ErrRecordNotFound, err)

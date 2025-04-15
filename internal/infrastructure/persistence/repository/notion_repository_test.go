@@ -1,7 +1,7 @@
 package repository
 
 import (
-	"template-echo-notion-integration/internal/model"
+	model "echo-household-budget/internal/model"
 	"testing"
 	"time"
 

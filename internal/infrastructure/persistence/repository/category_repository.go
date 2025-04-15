@@ -1,9 +1,9 @@
 package repository
 
 import (
+	domainmodel "echo-household-budget/internal/domain/model"
+	"echo-household-budget/internal/infrastructure/persistence/models"
 	"errors"
-	"template-echo-notion-integration/internal/domain/household"
-	"template-echo-notion-integration/internal/infrastructure/persistence/models"
 
 	"gorm.io/gorm"
 )
@@ -14,14 +14,14 @@ type CategoryRepository struct {
 }
 
 // NewCategoryRepository は新しいCategoryRepositoryを作成します
-func NewCategoryRepository(db *gorm.DB) household.CategoryRepository {
+func NewCategoryRepository(db *gorm.DB) domainmodel.CategoryRepository {
 	return &CategoryRepository{
 		db: db,
 	}
 }
 
 // Create は新しいカテゴリを作成します
-func (r *CategoryRepository) Create(category *household.Category) error {
+func (r *CategoryRepository) Create(category *domainmodel.Category) error {
 	model := &models.Category{
 		Name:  category.Name,
 		Color: category.Color,
@@ -36,7 +36,7 @@ func (r *CategoryRepository) Create(category *household.Category) error {
 }
 
 // FindByID は指定されたIDのカテゴリを取得します
-func (r *CategoryRepository) FindByID(id uint) (*household.Category, error) {
+func (r *CategoryRepository) FindByID(id uint) (*domainmodel.Category, error) {
 	var model models.Category
 	if err := r.db.First(&model, id).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -45,7 +45,7 @@ func (r *CategoryRepository) FindByID(id uint) (*household.Category, error) {
 		return nil, err
 	}
 
-	return &household.Category{
+	return &domainmodel.Category{
 		ID:    model.ID,
 		Name:  model.Name,
 		Color: model.Color,
@@ -53,7 +53,7 @@ func (r *CategoryRepository) FindByID(id uint) (*household.Category, error) {
 }
 
 // Update は既存のカテゴリを更新します
-func (r *CategoryRepository) Update(category *household.Category) error {
+func (r *CategoryRepository) Update(category *domainmodel.Category) error {
 	model := &models.Category{
 		Base: models.Base{
 			ID: category.ID,

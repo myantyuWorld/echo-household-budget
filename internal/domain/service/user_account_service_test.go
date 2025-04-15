@@ -1,4 +1,4 @@
-package service
+package domainservice
 
 import (
 	"errors"
@@ -7,8 +7,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
 
-	"template-echo-notion-integration/internal/domain/household"
-	mock "template-echo-notion-integration/internal/domain/mock/household"
+	mock "echo-household-budget/internal/domain/mock/domainmodel"
+	domainmodel "echo-household-budget/internal/domain/model"
 )
 
 func TestUserAccountService_CreateUserAccount(t *testing.T) {
@@ -17,14 +17,14 @@ func TestUserAccountService_CreateUserAccount(t *testing.T) {
 
 	tests := []struct {
 		name          string
-		lineUserInfo  *household.LINEUserInfo
+		lineUserInfo  *domainmodel.LINEUserInfo
 		mockSetup     func(*mock.MockUserAccountRepository)
 		expectedError error
 	}{
 		{
 			name: "新規ユーザーアカウントの作成に成功",
-			lineUserInfo: &household.LINEUserInfo{
-				UserID:      household.LINEUserID("user123"),
+			lineUserInfo: &domainmodel.LINEUserInfo{
+				UserID:      domainmodel.LINEUserID("user123"),
 				DisplayName: "テストユーザー",
 				PictureURL:  "https://example.com/photo.jpg",
 			},
@@ -59,18 +59,18 @@ func TestUserAccountService_IsDuplicateUserAccount(t *testing.T) {
 
 	tests := []struct {
 		name           string
-		lineUserID     household.LINEUserID
+		lineUserID     domainmodel.LINEUserID
 		mockSetup      func(*mock.MockUserAccountRepository)
 		expectedResult bool
 		expectedError  error
 	}{
 		{
 			name:       "ユーザーが存在する場合",
-			lineUserID: household.LINEUserID("existing_user"),
+			lineUserID: domainmodel.LINEUserID("existing_user"),
 			mockSetup: func(m *mock.MockUserAccountRepository) {
-				m.EXPECT().FindByLINEUserID(household.LINEUserID("existing_user")).Return(&household.UserAccount{
+				m.EXPECT().FindByLINEUserID(domainmodel.LINEUserID("existing_user")).Return(&domainmodel.UserAccount{
 					ID:     1,
-					UserID: household.LINEUserID("existing_user"),
+					UserID: domainmodel.LINEUserID("existing_user"),
 					Name:   "既存ユーザー",
 				}, nil)
 			},
@@ -79,18 +79,18 @@ func TestUserAccountService_IsDuplicateUserAccount(t *testing.T) {
 		},
 		{
 			name:       "ユーザーが存在しない場合",
-			lineUserID: household.LINEUserID("non_existent_user"),
+			lineUserID: domainmodel.LINEUserID("non_existent_user"),
 			mockSetup: func(m *mock.MockUserAccountRepository) {
-				m.EXPECT().FindByLINEUserID(household.LINEUserID("non_existent_user")).Return(nil, nil)
+				m.EXPECT().FindByLINEUserID(domainmodel.LINEUserID("non_existent_user")).Return(nil, nil)
 			},
 			expectedResult: false,
 			expectedError:  nil,
 		},
 		{
 			name:       "エラーが発生した場合",
-			lineUserID: household.LINEUserID("error_user"),
+			lineUserID: domainmodel.LINEUserID("error_user"),
 			mockSetup: func(m *mock.MockUserAccountRepository) {
-				m.EXPECT().FindByLINEUserID(household.LINEUserID("error_user")).Return(nil, errors.New("database error"))
+				m.EXPECT().FindByLINEUserID(domainmodel.LINEUserID("error_user")).Return(nil, errors.New("database error"))
 			},
 			expectedResult: false,
 			expectedError:  errors.New("database error"),

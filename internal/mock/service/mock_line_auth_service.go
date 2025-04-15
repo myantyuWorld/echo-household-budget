@@ -10,8 +10,8 @@
 package mock
 
 import (
+	domainmodel "echo-household-budget/internal/domain/model"
 	reflect "reflect"
-	household "template-echo-notion-integration/internal/domain/household"
 
 	echo "github.com/labstack/echo/v4"
 	gomock "go.uber.org/mock/gomock"
@@ -56,10 +56,10 @@ func (mr *MockLineAuthServiceMockRecorder) Callback(c, code any) *gomock.Call {
 }
 
 // CheckAuth mocks base method.
-func (m *MockLineAuthService) CheckAuth(c echo.Context) (*household.UserAccount, error) {
+func (m *MockLineAuthService) CheckAuth(c echo.Context) (*domainmodel.UserAccount, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CheckAuth", c)
-	ret0, _ := ret[0].(*household.UserAccount)
+	ret0, _ := ret[0].(*domainmodel.UserAccount)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

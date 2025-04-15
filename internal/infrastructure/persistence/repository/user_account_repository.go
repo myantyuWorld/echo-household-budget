@@ -1,8 +1,8 @@
 package repository
 
 import (
-	"template-echo-notion-integration/internal/domain/household"
-	"template-echo-notion-integration/internal/infrastructure/persistence/models"
+	domainmodel "echo-household-budget/internal/domain/model"
+	"echo-household-budget/internal/infrastructure/persistence/models"
 
 	"gorm.io/gorm"
 )
@@ -13,13 +13,13 @@ type UserAccountRepository struct {
 }
 
 // FindByLINEUserID implements household.UserAccountRepository.
-func (r *UserAccountRepository) FindByLINEUserID(userID household.LINEUserID) (*household.UserAccount, error) {
+func (r *UserAccountRepository) FindByLINEUserID(userID domainmodel.LINEUserID) (*domainmodel.UserAccount, error) {
 	var userAccount models.UserAccount
 	if err := r.db.Where("user_id = ?", userID).First(&userAccount).Error; err != nil {
 		return nil, err
 	}
 
-	return &household.UserAccount{
+	return &domainmodel.UserAccount{
 		ID:         userAccount.ID,
 		Name:       userAccount.Name,
 		PictureURL: userAccount.PictureURL,
@@ -27,14 +27,14 @@ func (r *UserAccountRepository) FindByLINEUserID(userID household.LINEUserID) (*
 }
 
 // NewUserAccountRepository は新しいUserAccountRepositoryを作成します
-func NewUserAccountRepository(db *gorm.DB) household.UserAccountRepository {
+func NewUserAccountRepository(db *gorm.DB) domainmodel.UserAccountRepository {
 	return &UserAccountRepository{
 		db: db,
 	}
 }
 
 // Create は新しいユーザーアカウントを作成します
-func (r *UserAccountRepository) Create(userAccount *household.UserAccount) error {
+func (r *UserAccountRepository) Create(userAccount *domainmodel.UserAccount) error {
 	model := &models.UserAccount{
 		UserID:     string(userAccount.UserID),
 		Name:       userAccount.Name,

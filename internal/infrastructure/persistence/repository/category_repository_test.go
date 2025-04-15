@@ -1,19 +1,20 @@
 package repository
 
 import (
-	"template-echo-notion-integration/internal/domain/household"
 	"testing"
 
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/stretchr/testify/assert"
 	"gorm.io/gorm"
+
+	domainmodel "echo-household-budget/internal/domain/model"
 )
 
 func TestCategoryRepository_Create(t *testing.T) {
 	gormDB, mock := setupTest(t)
 	repo := NewCategoryRepository(gormDB)
 
-	category := &household.Category{
+	category := &domainmodel.Category{
 		Name:  "食費",
 		Color: "#FF0000",
 	}
@@ -52,7 +53,7 @@ func TestCategoryRepository_Update(t *testing.T) {
 	gormDB, mock := setupTest(t)
 	repo := NewCategoryRepository(gormDB)
 
-	category := &household.Category{
+	category := &domainmodel.Category{
 		ID:    1,
 		Name:  "食費（更新）",
 		Color: "#FF0000",
@@ -98,7 +99,7 @@ func TestCategoryRepository_NotFound(t *testing.T) {
 	assert.Nil(t, category)
 
 	// Update - Not Found
-	category = &household.Category{
+	category = &domainmodel.Category{
 		ID:    999,
 		Name:  "存在しないカテゴリ",
 		Color: "#FF0000",

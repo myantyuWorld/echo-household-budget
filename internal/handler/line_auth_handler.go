@@ -2,10 +2,10 @@
 package handler
 
 import (
+	"echo-household-budget/config"
+	"echo-household-budget/internal/usecase"
 	"fmt"
 	"net/http"
-	"template-echo-notion-integration/config"
-	"template-echo-notion-integration/internal/service"
 
 	"github.com/labstack/echo/v4"
 )
@@ -18,7 +18,7 @@ type AuthHandler interface {
 }
 
 type lineAuthHandler struct {
-	lineAuthService service.LineAuthService
+	lineAuthService usecase.LineAuthService
 	appConfig       *config.AppConfig
 }
 
@@ -62,7 +62,7 @@ func (a *lineAuthHandler) Logout(c echo.Context) error {
 	return c.JSON(http.StatusOK, echo.Map{"message": "Logged out"})
 }
 
-func NewLineAuthHandler(lineAuthService service.LineAuthService, appConfig *config.AppConfig) AuthHandler {
+func NewLineAuthHandler(lineAuthService usecase.LineAuthService, appConfig *config.AppConfig) AuthHandler {
 	return &lineAuthHandler{
 		lineAuthService: lineAuthService,
 		appConfig:       appConfig,

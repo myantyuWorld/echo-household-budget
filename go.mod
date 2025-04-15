@@ -1,4 +1,4 @@
-module template-echo-notion-integration
+module echo-household-budget
 
 go 1.23.0
 

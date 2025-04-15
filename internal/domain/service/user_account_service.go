@@ -1,23 +1,23 @@
 //go:generate mockgen -source=$GOFILE -destination=../mock/$GOPACKAGE/mock_$GOFILE -package=mock
-package service
+package domainservice
 
 import (
-	"template-echo-notion-integration/internal/domain/household"
+	domainmodel "echo-household-budget/internal/domain/model"
 
 	"gorm.io/gorm"
 )
 
 type UserAccountService interface {
-	CreateUserAccount(lineUserInfo *household.LINEUserInfo) error
-	IsDuplicateUserAccount(lineUserID household.LINEUserID) (bool, error)
+	CreateUserAccount(lineUserInfo *domainmodel.LINEUserInfo) error
+	IsDuplicateUserAccount(lineUserID domainmodel.LINEUserID) (bool, error)
 }
 
 type userAccountService struct {
-	repository household.UserAccountRepository
+	repository domainmodel.UserAccountRepository
 }
 
 // IsDuplicateUserAccount implements UserAccountService.
-func (s *userAccountService) IsDuplicateUserAccount(lineUserID household.LINEUserID) (bool, error) {
+func (s *userAccountService) IsDuplicateUserAccount(lineUserID domainmodel.LINEUserID) (bool, error) {
 	account, err := s.repository.FindByLINEUserID(lineUserID)
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
@@ -29,12 +29,12 @@ func (s *userAccountService) IsDuplicateUserAccount(lineUserID household.LINEUse
 	return account != nil, nil
 }
 
-func (s *userAccountService) CreateUserAccount(lineUserInfo *household.LINEUserInfo) error {
-	userAccount := household.NewUserAccount(lineUserInfo)
+func (s *userAccountService) CreateUserAccount(lineUserInfo *domainmodel.LINEUserInfo) error {
+	userAccount := domainmodel.NewUserAccount(lineUserInfo)
 	return s.repository.Create(userAccount)
 }
 
-func NewUserAccountService(repository household.UserAccountRepository) UserAccountService {
+func NewUserAccountService(repository domainmodel.UserAccountRepository) UserAccountService {
 	return &userAccountService{
 		repository: repository,
 	}

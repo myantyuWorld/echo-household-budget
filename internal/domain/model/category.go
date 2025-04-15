@@ -1,4 +1,4 @@
-package household
+package domainmodel
 
 // Category はカテゴリのドメインエンティティ
 type Category struct {

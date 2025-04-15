@@ -7,9 +7,10 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	apperrors "echo-household-budget/internal/shared/errors"
+
 	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/assert"
-	apperrors "template-echo-notion-integration/internal/shared/errors"
 )
 
 func TestErrorHandler(t *testing.T) {
@@ -20,8 +21,8 @@ func TestErrorHandler(t *testing.T) {
 		expectedBody   ErrorResponse
 	}{
 		{
-			name: "AppError - InvalidInput",
-			err:  apperrors.NewAppError(apperrors.ErrorCodeInvalidInput, "invalid input", nil),
+			name:           "AppError - InvalidInput",
+			err:            apperrors.NewAppError(apperrors.ErrorCodeInvalidInput, "invalid input", nil),
 			expectedStatus: http.StatusBadRequest,
 			expectedBody: ErrorResponse{
 				Code:    string(apperrors.ErrorCodeInvalidInput),
@@ -29,8 +30,8 @@ func TestErrorHandler(t *testing.T) {
 			},
 		},
 		{
-			name: "AppError - NotFound",
-			err:  apperrors.NewAppError(apperrors.ErrorCodeNotFound, "not found", nil),
+			name:           "AppError - NotFound",
+			err:            apperrors.NewAppError(apperrors.ErrorCodeNotFound, "not found", nil),
 			expectedStatus: http.StatusNotFound,
 			expectedBody: ErrorResponse{
 				Code:    string(apperrors.ErrorCodeNotFound),
@@ -38,8 +39,8 @@ func TestErrorHandler(t *testing.T) {
 			},
 		},
 		{
-			name: "AppError - Unauthorized",
-			err:  apperrors.NewAppError(apperrors.ErrorCodeUnauthorized, "unauthorized", nil),
+			name:           "AppError - Unauthorized",
+			err:            apperrors.NewAppError(apperrors.ErrorCodeUnauthorized, "unauthorized", nil),
 			expectedStatus: http.StatusUnauthorized,
 			expectedBody: ErrorResponse{
 				Code:    string(apperrors.ErrorCodeUnauthorized),
@@ -47,8 +48,8 @@ func TestErrorHandler(t *testing.T) {
 			},
 		},
 		{
-			name: "AppError - DatabaseError",
-			err:  apperrors.NewAppError(apperrors.ErrorCodeDatabaseError, "database error", nil),
+			name:           "AppError - DatabaseError",
+			err:            apperrors.NewAppError(apperrors.ErrorCodeDatabaseError, "database error", nil),
 			expectedStatus: http.StatusInternalServerError,
 			expectedBody: ErrorResponse{
 				Code:    string(apperrors.ErrorCodeDatabaseError),
@@ -56,8 +57,8 @@ func TestErrorHandler(t *testing.T) {
 			},
 		},
 		{
-			name: "AppError - ExternalService",
-			err:  apperrors.NewAppError(apperrors.ErrorCodeExternalService, "external service error", nil),
+			name:           "AppError - ExternalService",
+			err:            apperrors.NewAppError(apperrors.ErrorCodeExternalService, "external service error", nil),
 			expectedStatus: http.StatusBadGateway,
 			expectedBody: ErrorResponse{
 				Code:    string(apperrors.ErrorCodeExternalService),
@@ -65,8 +66,8 @@ func TestErrorHandler(t *testing.T) {
 			},
 		},
 		{
-			name: "標準エラー",
-			err:  errors.New("standard error"),
+			name:           "標準エラー",
+			err:            errors.New("standard error"),
 			expectedStatus: http.StatusInternalServerError,
 			expectedBody: ErrorResponse{
 				Code:    string(apperrors.ErrorCodeInternalError),
@@ -151,4 +152,4 @@ func TestGetHTTPStatus(t *testing.T) {
 			assert.Equal(t, tt.expected, status)
 		})
 	}
-} 
+}

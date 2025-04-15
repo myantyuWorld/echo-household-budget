@@ -10,8 +10,8 @@
 package mock
 
 import (
+	repository "echo-household-budget/internal/infrastructure/persistence/repository"
 	reflect "reflect"
-	repository "template-echo-notion-integration/internal/infrastructure/persistence/repository"
 
 	gomock "go.uber.org/mock/gomock"
 )

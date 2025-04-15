@@ -20,11 +20,11 @@ services:
       retries: 5
 
   # TODO : AWS Fargateを使用して、タスク定義作って、Fargateでmigrateする
-  migrate:
-    image: golang:1.20-alpine
-    volumes:
-      - ./migrations:/migrations
-      - ./dbconfig.yml:/dbconfig.yml
-    command: ["sql-migrate", "up", "-env=development"]
-    depends_on:
-      - db
+  # migrate:
+  #   image: golang:1.20-alpine
+  #   volumes:
+  #     - ./migrations:/migrations
+  #     - ./dbconfig.yml:/dbconfig.yml
+  #   command: ["sql-migrate", "up", "-env=development"]
+  #   depends_on:
+  #     - db

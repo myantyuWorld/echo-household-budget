@@ -1,4 +1,4 @@
-package service
+package usecase
 
 import (
 	"errors"
@@ -11,11 +11,11 @@ import (
 	"go.uber.org/mock/gomock"
 	"gorm.io/gorm"
 
-	"template-echo-notion-integration/internal/domain/household"
-	mockUserAccountRepository "template-echo-notion-integration/internal/domain/mock/household"
-	mockDomainService "template-echo-notion-integration/internal/domain/mock/service"
-	mock "template-echo-notion-integration/internal/infrastructure/persistence/mock/repository"
-	"template-echo-notion-integration/internal/infrastructure/persistence/repository"
+	mockUserAccountRepository "echo-household-budget/internal/domain/mock/domainmodel"
+	mockDomainService "echo-household-budget/internal/domain/mock/domainservice"
+	domainmodel "echo-household-budget/internal/domain/model"
+	mock "echo-household-budget/internal/infrastructure/persistence/mock/repository"
+	"echo-household-budget/internal/infrastructure/persistence/repository"
 )
 
 func setupEchoContext() echo.Context {
@@ -47,7 +47,7 @@ func TestLineAuthService_Callback(t *testing.T) {
 					DisplayName: "テストユーザー",
 					PictureURL:  "https://example.com/photo.jpg",
 				}, nil)
-				us.EXPECT().IsDuplicateUserAccount(household.LINEUserID("user123")).Return(false, nil)
+				us.EXPECT().IsDuplicateUserAccount(domainmodel.LINEUserID("user123")).Return(false, nil)
 				us.EXPECT().CreateUserAccount(gomock.Any()).Return(nil)
 			},
 			expectedError: nil,
@@ -82,7 +82,7 @@ func TestLineAuthService_Callback(t *testing.T) {
 					DisplayName: "テストユーザー",
 					PictureURL:  "https://example.com/photo.jpg",
 				}, nil)
-				us.EXPECT().IsDuplicateUserAccount(household.LINEUserID("user123")).Return(false, errors.New("failed to check duplicate"))
+				us.EXPECT().IsDuplicateUserAccount(domainmodel.LINEUserID("user123")).Return(false, errors.New("failed to check duplicate"))
 			},
 			expectedError: errors.New("failed to check if user account exists: failed to check duplicate"),
 		},
@@ -97,7 +97,7 @@ func TestLineAuthService_Callback(t *testing.T) {
 					DisplayName: "テストユーザー",
 					PictureURL:  "https://example.com/photo.jpg",
 				}, nil)
-				us.EXPECT().IsDuplicateUserAccount(household.LINEUserID("user123")).Return(false, nil)
+				us.EXPECT().IsDuplicateUserAccount(domainmodel.LINEUserID("user123")).Return(false, nil)
 				us.EXPECT().CreateUserAccount(gomock.Any()).Return(errors.New("failed to create user account"))
 			},
 			expectedError: errors.New("failed to create user account: failed to create user account"),
@@ -113,7 +113,7 @@ func TestLineAuthService_Callback(t *testing.T) {
 					DisplayName: "テストユーザー",
 					PictureURL:  "https://example.com/photo.jpg",
 				}, nil)
-				us.EXPECT().IsDuplicateUserAccount(household.LINEUserID("user123")).Return(true, nil)
+				us.EXPECT().IsDuplicateUserAccount(domainmodel.LINEUserID("user123")).Return(true, nil)
 			},
 			expectedError: nil,
 		},
@@ -155,13 +155,13 @@ func TestLineAuthService_CheckAuth(t *testing.T) {
 		name          string
 		setupMock     func(*mockUserAccountRepository.MockUserAccountRepository)
 		setupContext  func(*echo.Context)
-		expectedUser  *household.UserAccount
+		expectedUser  *domainmodel.UserAccount
 		expectedError error
 	}{
 		{
 			name: "認証済みユーザーの情報取得に成功",
 			setupMock: func(ua *mockUserAccountRepository.MockUserAccountRepository) {
-				ua.EXPECT().FindByLINEUserID(household.LINEUserID("user123")).Return(&household.UserAccount{
+				ua.EXPECT().FindByLINEUserID(domainmodel.LINEUserID("user123")).Return(&domainmodel.UserAccount{
 					ID:         1,
 					UserID:     "user123",
 					Name:       "テストユーザー",
@@ -175,7 +175,7 @@ func TestLineAuthService_CheckAuth(t *testing.T) {
 				}
 				(*c).Request().AddCookie(cookie)
 			},
-			expectedUser: &household.UserAccount{
+			expectedUser: &domainmodel.UserAccount{
 				ID:         1,
 				UserID:     "user123",
 				Name:       "テストユーザー",
@@ -195,7 +195,7 @@ func TestLineAuthService_CheckAuth(t *testing.T) {
 		{
 			name: "ユーザーアカウントが見つからない場合",
 			setupMock: func(ua *mockUserAccountRepository.MockUserAccountRepository) {
-				ua.EXPECT().FindByLINEUserID(household.LINEUserID("user123")).Return(nil, gorm.ErrRecordNotFound)
+				ua.EXPECT().FindByLINEUserID(domainmodel.LINEUserID("user123")).Return(nil, gorm.ErrRecordNotFound)
 			},
 			setupContext: func(c *echo.Context) {
 				cookie := &http.Cookie{
