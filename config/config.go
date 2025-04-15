@@ -1,10 +1,10 @@
 package config
 
 import (
+	"echo-household-budget/internal/shared/errors"
 	"fmt"
 	"log"
 	"os"
-	"template-echo-notion-integration/internal/shared/errors"
 
 	"github.com/joho/godotenv"
 	"golang.org/x/oauth2"

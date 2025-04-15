@@ -2,18 +2,18 @@
 package handler
 
 import (
+	"echo-household-budget/internal/model"
+	"echo-household-budget/internal/usecase"
 	"encoding/json"
 	"log"
 	"net/http"
-	"template-echo-notion-integration/internal/model"
-	"template-echo-notion-integration/internal/service"
 
 	"github.com/gorilla/websocket"
 	"github.com/labstack/echo/v4"
 )
 
 type kaimemoHandler struct {
-	service service.KaimemoService
+	service usecase.KaimemoService
 }
 
 var clients = make(map[*websocket.Conn]bool)
@@ -235,6 +235,6 @@ type KaimemoHandler interface {
 	RemoveKaimemoAmount(c echo.Context) error
 }
 
-func NewKaimemoHandler(service service.KaimemoService) KaimemoHandler {
+func NewKaimemoHandler(service usecase.KaimemoService) KaimemoHandler {
 	return &kaimemoHandler{service: service}
 }

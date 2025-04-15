@@ -11,9 +11,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
 
-	"template-echo-notion-integration/config"
-	"template-echo-notion-integration/internal/domain/household"
-	serviceMock "template-echo-notion-integration/internal/mock/service"
+	"echo-household-budget/config"
+	domainmodel "echo-household-budget/internal/domain/model"
+	serviceMock "echo-household-budget/internal/mock/service"
 )
 
 func TestAuthHandler_Login(t *testing.T) {
@@ -151,13 +151,13 @@ func TestAuthHandler_FetchMe(t *testing.T) {
 		setupMock      func(*serviceMock.MockLineAuthService)
 		setupContext   func(*echo.Context)
 		expectedStatus int
-		expectedBody   *household.UserAccount
+		expectedBody   *domainmodel.UserAccount
 	}{
 		{
 			name: "認証済みユーザーの情報取得に成功",
 			setupMock: func(m *serviceMock.MockLineAuthService) {
-				m.EXPECT().CheckAuth(gomock.Any()).Return(&household.UserAccount{
-					ID:         1,
+				m.EXPECT().CheckAuth(gomock.Any()).Return(&domainmodel.UserAccount{
+					ID:         domainmodel.UserID(1),
 					UserID:     "user123",
 					Name:       "テストユーザー",
 					PictureURL: "https://example.com/picture.jpg",
@@ -171,8 +171,8 @@ func TestAuthHandler_FetchMe(t *testing.T) {
 				(*c).Request().AddCookie(cookie)
 			},
 			expectedStatus: http.StatusOK,
-			expectedBody: &household.UserAccount{
-				ID:         1,
+			expectedBody: &domainmodel.UserAccount{
+				ID:         domainmodel.UserID(1),
 				UserID:     "user123",
 				Name:       "テストユーザー",
 				PictureURL: "https://example.com/picture.jpg",
@@ -226,7 +226,7 @@ func TestAuthHandler_FetchMe(t *testing.T) {
 			assert.Equal(t, tt.expectedStatus, rec.Code)
 
 			if tt.expectedBody != nil {
-				var response household.UserAccount
+				var response domainmodel.UserAccount
 				err := json.NewDecoder(rec.Body).Decode(&response)
 				assert.NoError(t, err)
 				assert.Equal(t, *tt.expectedBody, response)

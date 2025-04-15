@@ -8,7 +8,9 @@ CREATE TABLE IF NOT EXISTS shopping_memos (
     memo TEXT,
     is_completed BOOLEAN NOT NULL DEFAULT FALSE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (household_book_id) REFERENCES household_books(id) ON DELETE CASCADE,
+    FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE SET NULL
 );
 
 CREATE INDEX idx_shopping_memos_household_book_id ON shopping_memos(household_book_id);

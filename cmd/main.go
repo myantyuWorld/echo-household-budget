@@ -1,14 +1,14 @@
 package main
 
 import (
+	"echo-household-budget/config"
+	domainService "echo-household-budget/internal/domain/service"
+	"echo-household-budget/internal/handler"
+	"echo-household-budget/internal/infrastructure/middleware"
+	"echo-household-budget/internal/infrastructure/persistence/repository"
+	"echo-household-budget/internal/usecase"
 	"fmt"
 	"net/http"
-	"template-echo-notion-integration/config"
-	domainService "template-echo-notion-integration/internal/domain/service"
-	"template-echo-notion-integration/internal/handler"
-	"template-echo-notion-integration/internal/infrastructure/persistence/repository"
-	"template-echo-notion-integration/internal/middleware"
-	"template-echo-notion-integration/internal/service"
 
 	"github.com/labstack/echo/v4"
 	echomiddleware "github.com/labstack/echo/v4/middleware"
@@ -47,11 +47,13 @@ func main() {
 	)
 	lineRepository := repository.NewLineRepository(appConfig.LINEConfig)
 	userAccountRepository := repository.NewUserAccountRepository(db)
-	userAccountService := domainService.NewUserAccountService(userAccountRepository)
+	categoryRepository := repository.NewCategoryRepository(db)
+	houseHoldRepository := repository.NewHouseHoldRepository(db)
+	userAccountService := domainService.NewUserAccountService(userAccountRepository, categoryRepository, houseHoldRepository)
 
 	// サービスの初期化
-	kaimemoService := service.NewKaimemoService(kaimemoRepository)
-	lineAuthService := service.NewLineAuthService(lineRepository, userAccountRepository, userAccountService)
+	kaimemoService := usecase.NewKaimemoService(kaimemoRepository)
+	lineAuthService := usecase.NewLineAuthService(lineRepository, userAccountRepository, userAccountService)
 
 	// ハンドラーの初期化
 	kaimemoHandler := handler.NewKaimemoHandler(kaimemoService)

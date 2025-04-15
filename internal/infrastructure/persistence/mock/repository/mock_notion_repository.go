@@ -10,8 +10,8 @@
 package mock
 
 import (
+	model "echo-household-budget/internal/model"
 	reflect "reflect"
-	model "template-echo-notion-integration/internal/model"
 
 	gomock "go.uber.org/mock/gomock"
 )

@@ -1,12 +1,12 @@
 //go:generate mockgen -source=$GOFILE -destination=../mock/$GOPACKAGE/mock_$GOFILE -package=mock
-package household
+package domainmodel
 
 // UserAccount はユーザーアカウントを表すドメインモデルです
 type UserAccount struct {
-	ID         uint       `json:"id"`
+	ID         UserID     `json:"id"`
 	UserID     LINEUserID `json:"user_id"`
 	Name       string     `json:"name"`
-	PictureURL string     `json:"picture_url"`
+	PictureURL string     `json:"pictureURL"`
 }
 
 type LINEUserInfo struct {
@@ -18,11 +18,12 @@ type LINEUserInfo struct {
 // UserAccountRepository はユーザーアカウントのリポジトリインターフェースです
 type UserAccountRepository interface {
 	Create(userAccount *UserAccount) error
-	Delete(id uint) error
+	Delete(id UserID) error
 	FindByLINEUserID(userID LINEUserID) (*UserAccount, error)
 }
 
 type LINEUserID string
+type UserID uint
 
 func NewUserAccount(lineUserInfo *LINEUserInfo) *UserAccount {
 	return &UserAccount{

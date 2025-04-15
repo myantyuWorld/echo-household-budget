@@ -3,8 +3,8 @@ package repository
 
 import (
 	"context"
+	model "echo-household-budget/internal/model"
 	"log"
-	"template-echo-notion-integration/internal/model"
 
 	"github.com/jomei/notionapi"
 )

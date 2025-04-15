@@ -1,8 +1,8 @@
 package middleware
 
 import (
+	"echo-household-budget/internal/shared/errors"
 	"net/http"
-	"template-echo-notion-integration/internal/shared/errors"
 
 	"github.com/labstack/echo/v4"
 )
@@ -56,4 +56,4 @@ func getHTTPStatus(code errors.ErrorCode) int {
 	default:
 		return http.StatusInternalServerError
 	}
-} 
+}
