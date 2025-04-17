@@ -6,7 +6,7 @@ type HouseHold struct {
 	UserID        UserID
 	Title         string
 	Description   string
-	CategoryLimit []CategoryLimit
+	CategoryLimit []*CategoryLimit
 }
 
 type HouseHoldID uint
@@ -16,7 +16,7 @@ func NewDefaultHouseHold(userAccount *UserAccount) *HouseHold {
 		UserID:      userAccount.ID,
 		Title:       "default",
 		Description: "default",
-		CategoryLimit: []CategoryLimit{
+		CategoryLimit: []*CategoryLimit{
 			{
 				CategoryID:  CategoryIDFood,
 				LimitAmount: 40000,

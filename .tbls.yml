@@ -1,0 +1,3 @@
+dsn: postgres://postgres:postgres@localhost:35432/echo-household-budget?sslmode=disable
+
+docPath: docs/schema

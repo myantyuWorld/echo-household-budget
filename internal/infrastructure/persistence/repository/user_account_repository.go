@@ -12,18 +12,59 @@ type UserAccountRepository struct {
 	db *gorm.DB
 }
 
-// FindByLINEUserID implements household.UserAccountRepository.
-func (r *UserAccountRepository) FindByLINEUserID(userID domainmodel.LINEUserID) (*domainmodel.UserAccount, error) {
+// fetchUserAccount はユーザーアカウントを取得する共通処理
+func (r *UserAccountRepository) fetchUserAccount(condition string, args ...interface{}) (*domainmodel.UserAccount, error) {
 	var userAccount models.UserAccount
-	if err := r.db.Where("user_id = ?", userID).First(&userAccount).Error; err != nil {
+	if err := r.db.
+		Debug().
+		Preload("HouseholdBooks.CategoryLimits").
+		Preload("HouseholdBooks.CategoryLimits.Category").
+		Where(condition, args...).
+		First(&userAccount).Error; err != nil {
 		return nil, err
 	}
 
+	// 関連テーブルの値をドメインモデルに変換
+	householdBooks := make([]*domainmodel.HouseHold, len(userAccount.HouseholdBooks))
+	var categoryLimits []*domainmodel.CategoryLimit
+
+	for i, hb := range userAccount.HouseholdBooks {
+		householdBooks[i] = &domainmodel.HouseHold{
+			ID:          domainmodel.HouseHoldID(hb.ID),
+			Title:       hb.Title,
+			Description: hb.Description,
+		}
+
+		// HouseholdBookのCategoryLimitsを追加
+		for _, cl := range hb.CategoryLimits {
+			categoryLimits = append(categoryLimits, &domainmodel.CategoryLimit{
+				ID:              domainmodel.CategoryLimitID(cl.ID),
+				HouseholdBookID: domainmodel.HouseHoldID(cl.HouseholdBookID),
+				CategoryID:      domainmodel.CategoryID(cl.CategoryID),
+				LimitAmount:     cl.LimitAmount,
+			})
+		}
+
+		householdBooks[i].CategoryLimit = categoryLimits
+	}
+
 	return &domainmodel.UserAccount{
-		ID:         domainmodel.UserID(userAccount.ID),
-		Name:       userAccount.Name,
-		PictureURL: userAccount.PictureURL,
+		ID:             domainmodel.UserID(userAccount.ID),
+		UserID:         domainmodel.LINEUserID(userAccount.UserID),
+		Name:           userAccount.Name,
+		PictureURL:     userAccount.PictureURL,
+		HouseholdBooks: householdBooks,
 	}, nil
+}
+
+// FetchMe implements domainmodel.UserAccountRepository.
+func (r *UserAccountRepository) FetchMe(userID domainmodel.UserID) (*domainmodel.UserAccount, error) {
+	return r.fetchUserAccount("user_accounts.id = ?", userID)
+}
+
+// FindByLINEUserID implements household.UserAccountRepository.
+func (r *UserAccountRepository) FindByLINEUserID(userID domainmodel.LINEUserID) (*domainmodel.UserAccount, error) {
+	return r.fetchUserAccount("user_id = ?", userID)
 }
 
 // NewUserAccountRepository は新しいUserAccountRepositoryを作成します
