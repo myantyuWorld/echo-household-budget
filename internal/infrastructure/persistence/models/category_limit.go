@@ -3,11 +3,11 @@ package models
 // CategoryLimit はカテゴリ予算モデル
 type CategoryLimit struct {
 	Base
-	HouseholdBookID uint `gorm:"not null;index"`
-	CategoryID      uint `gorm:"not null;index;uniqueIndex:idx_category_limits_unique"`
-	LimitAmount     int  `gorm:"not null;default:0"`
-	HouseholdBook   HouseholdBook
-	Category        Category
+	HouseholdBookID uint          `gorm:"not null"`
+	CategoryID      uint          `gorm:"not null"`
+	LimitAmount     int           `gorm:"not null"`
+	HouseholdBook   HouseholdBook `gorm:"foreignKey:HouseholdBookID"`
+	Category        Category      `gorm:"foreignKey:CategoryID"`
 }
 
 func (CategoryLimit) TableName() string { return "category_limits" }
