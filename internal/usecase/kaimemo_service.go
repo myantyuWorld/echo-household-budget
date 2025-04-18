@@ -21,6 +21,7 @@ func NewKaimemoService(repo repository.KaimemoRepository) KaimemoService {
 
 type kaimemoService struct {
 	repo repository.KaimemoRepository
+	// TODO : shoppingRepositoryに切り替え（Notion >>> RDBMS）
 }
 
 // CreateKaimemoAmount implements KaimemoService.

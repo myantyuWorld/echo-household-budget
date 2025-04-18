@@ -2,12 +2,17 @@
 package handler
 
 import (
+	"echo-household-budget/internal/infrastructure/middleware"
 	"echo-household-budget/internal/model"
 	"echo-household-budget/internal/usecase"
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 
+	domainmodel "echo-household-budget/internal/domain/model"
+
+	"github.com/davecgh/go-spew/spew"
 	"github.com/gorilla/websocket"
 	"github.com/labstack/echo/v4"
 )
@@ -40,6 +45,17 @@ func (k *kaimemoHandler) WebsocketTelegraph(c echo.Context) error {
 	defer conn.Close()
 
 	// ここで買い物一覧送信
+	user, ok := c.Get("user").(*domainmodel.UserAccount)
+	if !ok {
+		return c.JSON(http.StatusInternalServerError, map[string]string{
+			"error": "Failed to get user",
+		})
+	}
+	fmt.Println("===============")
+	fmt.Println("context から取得したuserAccount情報")
+	fmt.Println("===============")
+	spew.Dump(user)
+
 	res, err := k.service.FetchKaimemo(tempUserID)
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]string{
@@ -121,6 +137,22 @@ func (k *kaimemoHandler) CreateKaimemoAmount(c echo.Context) error {
 
 // FetchKaimemoSummaryRecord implements KaimemoHandler.
 func (k *kaimemoHandler) FetchKaimemoSummaryRecord(c echo.Context) error {
+	fmt.Println("===============")
+	fmt.Println("context から取得したuserAccount情報")
+	fmt.Println("===============")
+	spew.Dump(c.Request().Context())
+	ctx := c.Request().Context()
+	user, ok := ctx.Value(middleware.UserKey).(*domainmodel.UserAccount)
+	if !ok {
+		return c.JSON(http.StatusInternalServerError, map[string]string{
+			"error": "Failed to get user",
+		})
+	}
+	fmt.Println("===============")
+	fmt.Println("context から取得したuserAccount情報")
+	fmt.Println("===============")
+	spew.Dump(user)
+
 	tempUserID := c.QueryParam("tempUserID")
 	if tempUserID == "" {
 		return c.JSON(http.StatusBadRequest, map[string]string{

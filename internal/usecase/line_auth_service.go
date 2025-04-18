@@ -27,11 +27,11 @@ type lineAuthService struct {
 	userAccountService    domainservice.UserAccountService
 }
 
-func NewLineAuthService(repository repository.LineRepository, userAccountRepository domainmodel.UserAccountRepository, userAccountService domainservice.UserAccountService) LineAuthService {
+func NewLineAuthService(repository repository.LineRepository, userAccountRepository domainmodel.UserAccountRepository, userAccountService domainservice.UserAccountService, sessionManager SessionManager) LineAuthService {
 	return &lineAuthService{
 		repository:            repository,
 		userAccountRepository: userAccountRepository,
-		sessionManager:        NewSessionManager(),
+		sessionManager:        sessionManager,
 		cookieManager:         NewCookieManager(),
 		userAccountService:    userAccountService,
 	}
@@ -39,6 +39,7 @@ func NewLineAuthService(repository repository.LineRepository, userAccountReposit
 
 // Callback implements LineAuthService.
 func (l *lineAuthService) Callback(c echo.Context, code string) error {
+	fmt.Println("func (l *lineAuthService) Callback(c echo.Context, code string) error {")
 	if !l.repository.MatchState(c.QueryParam("state")) {
 		return errors.New("state does not match")
 	}
@@ -81,7 +82,7 @@ func (l *lineAuthService) CheckAuth(c echo.Context) (*domainmodel.UserAccount, e
 	}
 	userID, err := l.sessionManager.GetSession(cookie.Value)
 	if err != nil {
-		return nil, errors.New("session invalid")
+		return nil, errors.New("check auth session invalid")
 	}
 
 	userAaccount, err := l.userAccountRepository.FindByLINEUserID(domainmodel.LINEUserID(userID))
