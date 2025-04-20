@@ -3,9 +3,7 @@ package repository
 import (
 	domainmodel "echo-household-budget/internal/domain/model"
 	"echo-household-budget/internal/infrastructure/persistence/models"
-	"fmt"
 
-	"github.com/davecgh/go-spew/spew"
 	"gorm.io/gorm"
 )
 
@@ -25,11 +23,6 @@ func (r *UserAccountRepository) fetchUserAccount(condition string, args ...inter
 		First(&userAccount).Error; err != nil {
 		return nil, err
 	}
-
-	fmt.Println("===============")
-	fmt.Println("func (r *UserAccountRepository) fetchUserAccount(condition string, args ...interface{}) (*domainmodel.UserAccount, error) {")
-	spew.Dump(userAccount)
-	fmt.Println("===============")
 
 	// 関連テーブルの値をドメインモデルに変換
 	householdBooks := make([]*domainmodel.HouseHold, len(userAccount.HouseholdBooks))

@@ -3,9 +3,9 @@ package domainmodel
 
 // Category はカテゴリのドメインエンティティ
 type Category struct {
-	ID    CategoryID
-	Name  string
-	Color string
+	ID    CategoryID `json:"id"`
+	Name  string     `json:"name"`
+	Color string     `json:"color"`
 }
 
 type HouseHoldCategory struct {

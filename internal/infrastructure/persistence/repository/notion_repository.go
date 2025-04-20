@@ -9,7 +9,7 @@ import (
 	"github.com/jomei/notionapi"
 )
 
-type kaimemoRepository struct {
+type notionRepository struct {
 	client                         *notionapi.Client
 	query                          *notionapi.DatabaseQueryRequest
 	databaseKaimemoInputID         string
@@ -17,7 +17,7 @@ type kaimemoRepository struct {
 }
 
 // FetchKaimemoAmount implements KaimemoRepository.
-func (k *kaimemoRepository) FetchKaimemoAmountRecords(userID string) (*model.KaimemoAmountRecords, error) {
+func (k *notionRepository) FetchKaimemoAmountRecords(userID string) (*model.KaimemoAmountRecords, error) {
 	k.query.Filter = &notionapi.PropertyFilter{
 		Property: "tempUserID",
 		RichText: &notionapi.TextFilterCondition{
@@ -60,7 +60,7 @@ func (k *kaimemoRepository) FetchKaimemoAmountRecords(userID string) (*model.Kai
 }
 
 // InsertKaimemoAmount implements KaimemoRepository.
-func (k *kaimemoRepository) InsertKaimemoAmount(req model.CreateKaimemoAmountRequest) error {
+func (k *notionRepository) InsertKaimemoAmount(req model.CreateKaimemoAmountRequest) error {
 	_, err := k.client.Page.Create(context.Background(), &notionapi.PageCreateRequest{
 		Parent: notionapi.Parent{
 			DatabaseID: notionapi.DatabaseID(k.databaseKaimemoSummaryRecordID),
@@ -103,7 +103,7 @@ func (k *kaimemoRepository) InsertKaimemoAmount(req model.CreateKaimemoAmountReq
 }
 
 // RemoveKaimemoAmount implements KaimemoRepository.
-func (k *kaimemoRepository) RemoveKaimemoAmount(id string, userID string) error {
+func (k *notionRepository) RemoveKaimemoAmount(id string, userID string) error {
 	_, err := k.client.Page.Update(context.Background(), notionapi.PageID(id), &notionapi.PageUpdateRequest{
 		Archived: true,
 	})
@@ -117,7 +117,7 @@ func (k *kaimemoRepository) RemoveKaimemoAmount(id string, userID string) error 
 }
 
 // FetchKaimemo implements KaimemoRepository.
-func (k *kaimemoRepository) FetchKaimemo(userID string) ([]model.KaimemoResponse, error) {
+func (k *notionRepository) FetchKaimemo(userID string) ([]model.KaimemoResponse, error) {
 	k.query.Filter = &notionapi.PropertyFilter{
 		Property: "tempUserID",
 		RichText: &notionapi.TextFilterCondition{
@@ -157,7 +157,7 @@ func (k *kaimemoRepository) FetchKaimemo(userID string) ([]model.KaimemoResponse
 }
 
 // InsertKaimemo implements KaimemoRepository.
-func (k *kaimemoRepository) InsertKaimemo(req model.CreateKaimemoRequest) error {
+func (k *notionRepository) InsertKaimemo(req model.CreateKaimemoRequest) error {
 	_, err := k.client.Page.Create(context.Background(), &notionapi.PageCreateRequest{
 		Parent: notionapi.Parent{
 			DatabaseID: notionapi.DatabaseID(k.databaseKaimemoInputID), // 既存のデータベースID
@@ -198,7 +198,7 @@ func (k *kaimemoRepository) InsertKaimemo(req model.CreateKaimemoRequest) error 
 }
 
 // RemoveKaimemo implements KaimemoRepository.
-func (k *kaimemoRepository) RemoveKaimemo(id string, userID string) error {
+func (k *notionRepository) RemoveKaimemo(id string, userID string) error {
 	_, err := k.client.Page.Update(context.Background(), notionapi.PageID(id), &notionapi.PageUpdateRequest{
 		Archived: true,
 	})
@@ -224,5 +224,5 @@ func NewNotionRepository(apiKey string, databaseKaimemoInputID string, databaseK
 	client := notionapi.NewClient(notionapi.Token(apiKey))
 	query := &notionapi.DatabaseQueryRequest{}
 
-	return &kaimemoRepository{client: client, databaseKaimemoInputID: databaseKaimemoInputID, databaseKaimemoSummaryRecordID: databaseKaimemoSummaryRecordID, query: query}
+	return &notionRepository{client: client, databaseKaimemoInputID: databaseKaimemoInputID, databaseKaimemoSummaryRecordID: databaseKaimemoSummaryRecordID, query: query}
 }

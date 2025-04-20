@@ -37,32 +37,32 @@ func TestNewNotionRepository(t *testing.T) {
 
 			assert.NotNil(t, repo)
 
-			kaimemoRepo, ok := repo.(*kaimemoRepository)
+			notionRepo, ok := repo.(*notionRepository)
 			assert.True(t, ok)
-			assert.NotNil(t, kaimemoRepo.client)
-			assert.Equal(t, tc.databaseKaimemoInputID, kaimemoRepo.databaseKaimemoInputID)
-			assert.Equal(t, tc.databaseKaimemoSummaryRecordID, kaimemoRepo.databaseKaimemoSummaryRecordID)
-			assert.Equal(t, notionapi.Token(tc.apiKey), kaimemoRepo.client.Token)
+			assert.NotNil(t, notionRepo.client)
+			assert.Equal(t, tc.databaseKaimemoInputID, notionRepo.databaseKaimemoInputID)
+			assert.Equal(t, tc.databaseKaimemoSummaryRecordID, notionRepo.databaseKaimemoSummaryRecordID)
+			assert.Equal(t, notionapi.Token(tc.apiKey), notionRepo.client.Token)
 		})
 	}
 }
 
-type MockKaimemoRepository struct {
+type MockNotionRepository struct {
 	mock.Mock
 }
 
-func (m *MockKaimemoRepository) FetchKaimemoAmountRecords() (model.KaimemoAmountRecords, error) {
+func (m *MockNotionRepository) FetchKaimemoAmountRecords() (model.KaimemoAmountRecords, error) {
 	args := m.Called()
 	return args.Get(0).(model.KaimemoAmountRecords), args.Error(1)
 }
 
-func (m *MockKaimemoRepository) RemoveKaimemoAmount(id string) error {
+func (m *MockNotionRepository) RemoveKaimemoAmount(id string) error {
 	args := m.Called(id)
 	return args.Error(0)
 }
 
-func TestMockKaimemoRepository(t *testing.T) {
-	mockRepo := new(MockKaimemoRepository)
+func TestMockNotionRepository(t *testing.T) {
+	mockRepo := new(MockNotionRepository)
 
 	testData := model.KaimemoAmountRecords{
 		Records: []model.KaimemoAmount{

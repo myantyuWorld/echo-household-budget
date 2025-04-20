@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strconv"
 
 	domainmodel "echo-household-budget/internal/domain/model"
 
@@ -18,7 +19,8 @@ import (
 )
 
 type kaimemoHandler struct {
-	service usecase.KaimemoService
+	service         usecase.KaimemoService
+	shoppingUsecase usecase.ShoppingUsecase
 }
 
 var clients = make(map[*websocket.Conn]bool)
@@ -44,19 +46,14 @@ func (k *kaimemoHandler) WebsocketTelegraph(c echo.Context) error {
 	clients[conn] = true
 	defer conn.Close()
 
-	// ここで買い物一覧送信
-	user, ok := c.Get("user").(*domainmodel.UserAccount)
-	if !ok {
-		return c.JSON(http.StatusInternalServerError, map[string]string{
-			"error": "Failed to get user",
+	tempUserIDUint, err := strconv.ParseUint(tempUserID, 10, 32)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{
+			"error": "Invalid tempUserID format",
 		})
 	}
-	fmt.Println("===============")
-	fmt.Println("context から取得したuserAccount情報")
-	fmt.Println("===============")
-	spew.Dump(user)
 
-	res, err := k.service.FetchKaimemo(tempUserID)
+	res, err := k.shoppingUsecase.FetchShopping(domainmodel.HouseHoldID(uint(tempUserIDUint)))
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]string{
 			"error": "Failed to fetch kaimemo",
@@ -71,6 +68,7 @@ func (k *kaimemoHandler) WebsocketTelegraph(c echo.Context) error {
 			log.Println("読み取りエラー:", err)
 			break
 		}
+		fmt.Println("msg", msg)
 
 		// TODO : 処理区分を渡して、それに応じて登録・削除を分ける必要がある
 		var request model.TelegraphRequest
@@ -78,17 +76,28 @@ func (k *kaimemoHandler) WebsocketTelegraph(c echo.Context) error {
 			log.Println("JSONデコードエラー:", err)
 			continue
 		}
+		fmt.Println("request", request)
+		spew.Dump(request)
 
 		if request.MethodType == "1" {
-			if err := k.service.CreateKaimemo(model.CreateKaimemoRequest{
-				TempUserID: tempUserID,
-				Tag:        *request.Tag,
-				Name:       *request.Name,
-			}); err != nil {
-				return c.JSON(http.StatusInternalServerError, map[string]string{
-					"error": "Failed to create kaimemo",
-				})
+			shopping := domainmodel.NewShoppingMemo(domainmodel.HouseHoldID(*request.HouseholdBookID), domainmodel.CategoryID(*request.Tag), *request.Name, "")
+
+			if err := k.shoppingUsecase.CreateShopping(shopping); err != nil {
+				fmt.Println("err", err)
+				// return c.JSON(http.StatusInternalServerError, map[string]string{
+				// 	"error": "Failed to create shopping",
+				// })
 			}
+
+			// if err := k.service.CreateKaimemo(model.CreateKaimemoRequest{
+			// 	TempUserID: tempUserID,
+			// 	Tag:        fmt.Sprint(*request.Tag),
+			// 	Name:       *request.Name,
+			// }); err != nil {
+			// 	return c.JSON(http.StatusInternalServerError, map[string]string{
+			// 		"error": "Failed to create kaimemo",
+			// 	})
+			// }
 		} else if request.MethodType == "2" {
 			if err := k.service.RemoveKaimemo(*request.ID, tempUserID); err != nil {
 				return c.JSON(http.StatusInternalServerError, map[string]string{
@@ -97,12 +106,18 @@ func (k *kaimemoHandler) WebsocketTelegraph(c echo.Context) error {
 			}
 		}
 
-		res, err := k.service.FetchKaimemo(tempUserID)
+		res, err := k.shoppingUsecase.FetchShopping(domainmodel.HouseHoldID(tempUserIDUint))
 		if err != nil {
 			return c.JSON(http.StatusInternalServerError, map[string]string{
-				"error": "Failed to fetch kaimemo",
+				"error": "Failed to fetch shopping",
 			})
 		}
+		// res, err := k.service.FetchKaimemo(tempUserID)
+		// if err != nil {
+		// 	return c.JSON(http.StatusInternalServerError, map[string]string{
+		// 		"error": "Failed to fetch kaimemo",
+		// 	})
+		// }
 		resJSON, _ := json.Marshal(res)
 
 		// 全クライアントにメッセージをブロードキャスト
@@ -267,6 +282,6 @@ type KaimemoHandler interface {
 	RemoveKaimemoAmount(c echo.Context) error
 }
 
-func NewKaimemoHandler(service usecase.KaimemoService) KaimemoHandler {
-	return &kaimemoHandler{service: service}
+func NewKaimemoHandler(service usecase.KaimemoService, shoppingUsecase usecase.ShoppingUsecase) KaimemoHandler {
+	return &kaimemoHandler{service: service, shoppingUsecase: shoppingUsecase}
 }
