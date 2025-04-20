@@ -28,6 +28,11 @@ func main() {
 	if err != nil {
 		e.Logger.Fatal(err)
 	}
+	sqlDB, err := db.DB()
+	if err != nil {
+		e.Logger.Fatal(err)
+	}
+	defer sqlDB.Close()
 
 	// ミドルウェアの設定
 	e.Use(echomiddleware.Logger())

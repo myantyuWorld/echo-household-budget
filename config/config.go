@@ -34,6 +34,7 @@ type DatabaseConfig struct {
 	User     string `validate:"required"`
 	Password string `validate:"required"`
 	DBName   string `validate:"required"`
+	SSLMode  string `validate:"required"`
 }
 
 // LINEConfig はLINE関連の設定
@@ -162,6 +163,7 @@ func LoadConfig() *AppConfig {
 		User:     os.Getenv("DB_USER"),
 		Password: os.Getenv("DB_PASSWORD"),
 		DBName:   os.Getenv("DB_NAME"),
+		SSLMode:  os.Getenv("DB_SSLMODE"),
 	}
 
 	return &AppConfig{
@@ -185,12 +187,13 @@ func getEnvWithDefault(key, defaultValue string) string {
 
 // NewDBConnection はデータベース接続を作成する
 func NewDBConnection(config *DatabaseConfig) (*gorm.DB, error) {
-	dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=disable",
+	dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=%s",
 		config.Host,
 		config.User,
 		config.Password,
 		config.DBName,
 		config.Port,
+		config.SSLMode,
 	)
 
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
