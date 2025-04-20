@@ -2,7 +2,7 @@
 package domainmodel
 
 type HouseHold struct {
-	ID            HouseHoldID      `json:"houseHoldID"`
+	ID            HouseHoldID      `json:"id"`
 	UserID        UserID           `json:"userID"`
 	Title         string           `json:"title"`
 	Description   string           `json:"description"`

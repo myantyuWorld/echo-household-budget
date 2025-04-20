@@ -86,9 +86,6 @@ func (l *lineAuthService) CheckAuth(c echo.Context) (*domainmodel.UserAccount, e
 	}
 
 	userAaccount, err := l.userAccountRepository.FindByLINEUserID(domainmodel.LINEUserID(userID))
-	fmt.Println("===============")
-	spew.Dump(userAaccount)
-	fmt.Println("===============")
 	if err != nil {
 		return nil, errors.New("failed to find user account")
 	}

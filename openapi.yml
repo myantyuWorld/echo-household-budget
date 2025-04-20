@@ -332,3 +332,18 @@ components:
           type: string
         color:
           type: string
+    ShoppingMemo:
+      type: object
+      properties:
+        id:
+          type: integer
+        householdID:
+          type: integer
+        categoryID:
+          type: integer
+        title:
+          type: string
+        memo:
+          type: string
+        isCompleted:
+          type: boolean

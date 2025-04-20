@@ -5,11 +5,11 @@ import "time"
 
 type ShoppingMemo struct {
 	ID          ShoppingID  `json:"id"`
-	HouseholdID HouseHoldID `json:"household_id"`
-	CategoryID  CategoryID  `json:"category_id"`
+	HouseholdID HouseHoldID `json:"householdID"`
+	CategoryID  CategoryID  `json:"categoryID"`
 	Title       string      `json:"title"`
 	Memo        string      `json:"memo"`
-	IsCompleted IsCompleted `json:"is_completed"`
+	IsCompleted IsCompleted `json:"isCompleted"`
 }
 
 type ShoppingAmount struct {
@@ -21,7 +21,17 @@ type ShoppingAmount struct {
 	Memo        string      `json:"memo"`
 }
 
-type ShoppingID string
+func NewShoppingMemo(householdID HouseHoldID, categoryID CategoryID, title string, memo string) *ShoppingMemo {
+	return &ShoppingMemo{
+		HouseholdID: householdID,
+		CategoryID:  categoryID,
+		Title:       title,
+		Memo:        memo,
+		IsCompleted: NotDone,
+	}
+}
+
+type ShoppingID uint
 type IsCompleted bool
 
 const (
@@ -31,7 +41,7 @@ const (
 
 type ShoppingRepository interface {
 	RegisterShoppingMemo(shopping *ShoppingMemo) error
-	FetchShoppingMemoItem(id string) (*ShoppingMemo, error)
+	FetchShoppingMemoItem(householdID HouseHoldID) ([]*ShoppingMemo, error)
 	UpdateShoppingMemo(shopping *ShoppingMemo) error
 	DeleteShoppingMemo(id string) error
 	RegisterShoppingAmount(shopping *ShoppingAmount) error

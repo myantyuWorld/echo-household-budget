@@ -49,15 +49,17 @@ func main() {
 	userAccountRepository := repository.NewUserAccountRepository(db)
 	categoryRepository := repository.NewCategoryRepository(db)
 	houseHoldRepository := repository.NewHouseHoldRepository(db)
+	shoppingRepository := repository.NewShoppingRepository(db)
 	userAccountService := domainService.NewUserAccountService(userAccountRepository, categoryRepository, houseHoldRepository)
 
 	// サービスの初期化
 	sessionManager := usecase.NewSessionManager()
 	kaimemoService := usecase.NewKaimemoService(kaimemoRepository)
+	shoppingUsecase := usecase.NewShoppingUsecase(shoppingRepository)
 	lineAuthService := usecase.NewLineAuthService(lineRepository, userAccountRepository, userAccountService, sessionManager)
 
 	// ハンドラーの初期化
-	kaimemoHandler := handler.NewKaimemoHandler(kaimemoService)
+	kaimemoHandler := handler.NewKaimemoHandler(kaimemoService, shoppingUsecase)
 	lineAuthHandler := handler.NewLineAuthHandler(lineAuthService, appConfig)
 
 	e.GET("/health", func(c echo.Context) error {
