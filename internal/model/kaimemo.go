@@ -21,7 +21,7 @@ type CreateKaimemoRequest struct {
 
 type TelegraphRequest struct {
 	MethodType      MethodType `json:"methodType" validate:"required"`
-	ID              *string    `json:"id"`
+	ID              *int       `json:"id"`
 	Tag             *int       `json:"tag"`
 	Name            *string    `json:"name"`
 	HouseholdBookID *int       `json:"householdBookID"`

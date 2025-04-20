@@ -84,26 +84,24 @@ func (k *kaimemoHandler) WebsocketTelegraph(c echo.Context) error {
 
 			if err := k.shoppingUsecase.CreateShopping(shopping); err != nil {
 				fmt.Println("err", err)
-				// return c.JSON(http.StatusInternalServerError, map[string]string{
-				// 	"error": "Failed to create shopping",
-				// })
-			}
-
-			// if err := k.service.CreateKaimemo(model.CreateKaimemoRequest{
-			// 	TempUserID: tempUserID,
-			// 	Tag:        fmt.Sprint(*request.Tag),
-			// 	Name:       *request.Name,
-			// }); err != nil {
-			// 	return c.JSON(http.StatusInternalServerError, map[string]string{
-			// 		"error": "Failed to create kaimemo",
-			// 	})
-			// }
-		} else if request.MethodType == "2" {
-			if err := k.service.RemoveKaimemo(*request.ID, tempUserID); err != nil {
 				return c.JSON(http.StatusInternalServerError, map[string]string{
-					"error": "Failed to remove kaimemo",
+					"error": "Failed to create shopping",
 				})
 			}
+
+		} else if request.MethodType == "2" {
+			// TODO : shoppingUsecaseで削除する
+			if err := k.shoppingUsecase.DeleteShopping(domainmodel.ShoppingID(*request.ID)); err != nil {
+				return c.JSON(http.StatusInternalServerError, map[string]string{
+					"error": "Failed to delete shopping",
+				})
+			}
+
+			// if err := k.service.RemoveKaimemo(*request.ID, tempUserID); err != nil {
+			// 	return c.JSON(http.StatusInternalServerError, map[string]string{
+			// 		"error": "Failed to remove kaimemo",
+			// 	})
+			// }
 		}
 
 		res, err := k.shoppingUsecase.FetchShopping(domainmodel.HouseHoldID(tempUserIDUint))
@@ -112,12 +110,6 @@ func (k *kaimemoHandler) WebsocketTelegraph(c echo.Context) error {
 				"error": "Failed to fetch shopping",
 			})
 		}
-		// res, err := k.service.FetchKaimemo(tempUserID)
-		// if err != nil {
-		// 	return c.JSON(http.StatusInternalServerError, map[string]string{
-		// 		"error": "Failed to fetch kaimemo",
-		// 	})
-		// }
 		resJSON, _ := json.Marshal(res)
 
 		// 全クライアントにメッセージをブロードキャスト

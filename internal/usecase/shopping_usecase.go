@@ -23,14 +23,14 @@ func (s *shoppingUsecase) CreateShopping(shopping *domainmodel.ShoppingMemo) err
 }
 
 // DeleteShopping implements ShoppingUsecase.
-func (s *shoppingUsecase) DeleteShopping(id string) error {
-	panic("unimplemented")
+func (s *shoppingUsecase) DeleteShopping(id domainmodel.ShoppingID) error {
+	return s.repo.DeleteShoppingMemo(id)
 }
 
 type ShoppingUsecase interface {
 	CreateShopping(shopping *domainmodel.ShoppingMemo) error
 	FetchShopping(householdID domainmodel.HouseHoldID) ([]*domainmodel.ShoppingMemo, error)
-	DeleteShopping(id string) error
+	DeleteShopping(id domainmodel.ShoppingID) error
 }
 
 func NewShoppingUsecase(repo domainmodel.ShoppingRepository) ShoppingUsecase {
