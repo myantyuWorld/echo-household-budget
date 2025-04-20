@@ -52,8 +52,9 @@ func main() {
 	userAccountService := domainService.NewUserAccountService(userAccountRepository, categoryRepository, houseHoldRepository)
 
 	// サービスの初期化
+	sessionManager := usecase.NewSessionManager()
 	kaimemoService := usecase.NewKaimemoService(kaimemoRepository)
-	lineAuthService := usecase.NewLineAuthService(lineRepository, userAccountRepository, userAccountService)
+	lineAuthService := usecase.NewLineAuthService(lineRepository, userAccountRepository, userAccountService, sessionManager)
 
 	// ハンドラーの初期化
 	kaimemoHandler := handler.NewKaimemoHandler(kaimemoService)
@@ -66,7 +67,7 @@ func main() {
 	})
 
 	// 買い物メモ関連のエンドポイント
-	kaimemo := e.Group("/kaimemo")
+	kaimemo := e.Group("/kaimemo", middleware.AuthMiddleware(sessionManager, userAccountRepository))
 	kaimemo.GET("", kaimemoHandler.FetchKaimemo)
 	kaimemo.POST("", kaimemoHandler.CreateKaimemo)
 	kaimemo.DELETE("/:id", kaimemoHandler.RemoveKaimemo)
@@ -80,6 +81,7 @@ func main() {
 	lineAuth.GET("/login", lineAuthHandler.Login)
 	lineAuth.GET("/callback", lineAuthHandler.Callback)
 	lineAuth.POST("/logout", lineAuthHandler.Logout)
+	// lineAuth.GET("/me", lineAuthHandler.FetchMe, middleware.AuthMiddleware(sessionManager, userAccountRepository))
 	lineAuth.GET("/me", lineAuthHandler.FetchMe)
 
 	// サーバーの起動

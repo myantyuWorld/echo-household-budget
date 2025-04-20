@@ -24,7 +24,7 @@ func NewCategoryRepository(db *gorm.DB) domainmodel.CategoryRepository {
 func (r *CategoryRepository) CreateHouseHoldCategory(categoryLimit *domainmodel.CategoryLimit) error {
 	model := &models.CategoryLimit{
 		HouseholdBookID: uint(categoryLimit.HouseholdBookID),
-		CategoryID:      uint(categoryLimit.CategoryID),
+		CategoryID:      uint(categoryLimit.Category.ID),
 		LimitAmount:     categoryLimit.LimitAmount,
 	}
 
@@ -92,8 +92,12 @@ func (r *CategoryRepository) FindHouseHoldCategoryByHouseHoldID(categoryLimitID 
 	return &domainmodel.CategoryLimit{
 		ID:              domainmodel.CategoryLimitID(model.ID),
 		HouseholdBookID: domainmodel.HouseHoldID(model.HouseholdBookID),
-		CategoryID:      domainmodel.CategoryID(model.CategoryID),
-		LimitAmount:     model.LimitAmount,
+		Category: domainmodel.Category{
+			ID:    domainmodel.CategoryID(model.CategoryID),
+			Name:  model.Category.Name,
+			Color: model.Category.Color,
+		},
+		LimitAmount: model.LimitAmount,
 	}, nil
 }
 
@@ -121,13 +125,13 @@ func (r *CategoryRepository) UpdateHouseHoldCategory(categoryLimit *domainmodel.
 			ID: uint(categoryLimit.ID),
 		},
 		HouseholdBookID: uint(categoryLimit.HouseholdBookID),
-		CategoryID:      uint(categoryLimit.CategoryID),
+		CategoryID:      uint(categoryLimit.Category.ID),
 		LimitAmount:     categoryLimit.LimitAmount,
 	}
 
 	result := r.db.Model(model).Updates(map[string]interface{}{
 		"household_book_id": categoryLimit.HouseholdBookID,
-		"category_id":       categoryLimit.CategoryID,
+		"category_id":       categoryLimit.Category.ID,
 		"limit_amount":      categoryLimit.LimitAmount,
 	})
 

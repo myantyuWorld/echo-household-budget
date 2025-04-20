@@ -29,7 +29,7 @@ paths:
       description: LINEログイン
       responses:
         200:
-          $ref: '#/components/responses/GetLineMe'
+          $ref: '#/components/responses/FetchMe'
         400:
           $ref: '#/components/responses/UnauthorizedError'
   /line/logout:
@@ -190,13 +190,13 @@ paths:
           $ref: '#/components/responses/GeneralError'
 components:
   responses:
-    GetLineMe:
+    FetchMe:
       description: ユーザー情報取得
       content:
         application/json:
           schema:
             type : object
-            $ref: '#/components/schemas/LineMe'
+            $ref: '#/components/schemas/FetchMe'
     GetKaimemoSummary:
       description: 週次集計
       content:
@@ -219,7 +219,7 @@ components:
     GeneralError:
       description: Unexpected error
   schemas:
-    LineMe:
+    FetchMe:
       type: object
       properties:
         id:
@@ -230,6 +230,10 @@ components:
           type: string
         pictureURL:
           type: string
+        householdBooks:
+          type: array
+          items:
+            $ref: '#/components/schemas/HouseholdBook'
     KaimemoSummary:
       type: object
       properties:
@@ -293,3 +297,38 @@ components:
           type: string
         done:
           type: boolean
+    HouseholdBook:
+      type: object
+      properties:
+        id:
+          type: integer
+        userID:
+          type: integer
+        title:
+          type: string
+        description:
+          type: string
+        categoryLimit:
+          type: array
+          items:
+            $ref: '#/components/schemas/CategoryLimit'
+    CategoryLimit:
+      type: object
+      properties:
+        id:
+          type: integer
+        categoryID:
+          type: integer
+        limitAmount:
+          type: integer
+        category:
+          $ref: '#/components/schemas/Category'
+    Category:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        color:
+          type: string

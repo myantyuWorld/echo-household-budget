@@ -4,10 +4,10 @@ package domainmodel
 // UserAccount はユーザーアカウントを表すドメインモデルです
 type UserAccount struct {
 	ID             UserID       `json:"id"`
-	UserID         LINEUserID   `json:"user_id"`
+	UserID         LINEUserID   `json:"userID"`
 	Name           string       `json:"name"`
 	PictureURL     string       `json:"pictureURL"`
-	HouseholdBooks []*HouseHold `json:"household_books"`
+	HouseholdBooks []*HouseHold `json:"householdBooks"`
 }
 
 type LINEUserInfo struct {

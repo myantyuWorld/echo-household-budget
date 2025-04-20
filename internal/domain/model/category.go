@@ -16,10 +16,10 @@ type HouseHoldCategory struct {
 }
 
 type CategoryLimit struct {
-	ID              CategoryLimitID
-	HouseholdBookID HouseHoldID
-	CategoryID      CategoryID
-	LimitAmount     int
+	ID              CategoryLimitID `json:"categoryLimitID"`
+	HouseholdBookID HouseHoldID     `json:"houseHoldID"`
+	Category        Category        `json:"category"`
+	LimitAmount     int             `json:"limitAmount"`
 }
 
 type CategoryID uint

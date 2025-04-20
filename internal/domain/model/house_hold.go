@@ -2,11 +2,11 @@
 package domainmodel
 
 type HouseHold struct {
-	ID            HouseHoldID
-	UserID        UserID
-	Title         string
-	Description   string
-	CategoryLimit []*CategoryLimit
+	ID            HouseHoldID      `json:"houseHoldID"`
+	UserID        UserID           `json:"userID"`
+	Title         string           `json:"title"`
+	Description   string           `json:"description"`
+	CategoryLimit []*CategoryLimit `json:"categoryLimit"`
 }
 
 type HouseHoldID uint
@@ -18,11 +18,19 @@ func NewDefaultHouseHold(userAccount *UserAccount) *HouseHold {
 		Description: "default",
 		CategoryLimit: []*CategoryLimit{
 			{
-				CategoryID:  CategoryIDFood,
+				Category: Category{
+					ID:    CategoryIDFood,
+					Name:  "食費",
+					Color: "#FF0000",
+				},
 				LimitAmount: 40000,
 			},
 			{
-				CategoryID:  CategoryIDNecessary,
+				Category: Category{
+					ID:    CategoryIDNecessary,
+					Name:  "日用品",
+					Color: "#00FF00",
+				},
 				LimitAmount: 10000,
 			},
 		},

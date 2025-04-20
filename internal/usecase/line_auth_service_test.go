@@ -126,8 +126,13 @@ func TestLineAuthService_Callback(t *testing.T) {
 			mockUserService := mockDomainService.NewMockUserAccountService(ctrl)
 			tt.mockSetup(mockRepo, mockUserService, mockUserAccountRepository)
 
-			service := NewLineAuthService(mockRepo, mockUserAccountRepository, mockUserService)
-			service.(*lineAuthService).userAccountService = mockUserService
+			mockSession := &mockSessionManager{
+				getSessionFunc: func(sessionID string) (string, error) {
+					return "user123", nil
+				},
+			}
+			service := NewLineAuthService(mockRepo, mockUserAccountRepository, mockUserService, mockSession)
+			// lineService := service.(*lineAuthService)
 
 			c := setupEchoContext()
 			c.QueryParams().Set("state", tt.state)
@@ -215,18 +220,12 @@ func TestLineAuthService_CheckAuth(t *testing.T) {
 			mockUserAccountRepository := mockUserAccountRepository.NewMockUserAccountRepository(ctrl)
 			mockUserService := mockDomainService.NewMockUserAccountService(ctrl)
 
-			service := NewLineAuthService(mockRepo, mockUserAccountRepository, mockUserService)
-			lineService := service.(*lineAuthService)
-
-			// セッションマネージャーのモック設定
-			lineService.sessionManager = &mockSessionManager{
+			mockSession := &mockSessionManager{
 				getSessionFunc: func(sessionID string) (string, error) {
-					if sessionID == "valid_session" {
-						return "user123", nil
-					}
-					return "", errors.New("session invalid")
+					return "user123", nil
 				},
 			}
+			service := NewLineAuthService(mockRepo, mockUserAccountRepository, mockUserService, mockSession)
 
 			tt.setupMock(mockUserAccountRepository)
 
