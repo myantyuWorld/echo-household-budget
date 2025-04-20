@@ -21,8 +21,17 @@ func (s *shoppingRepository) DeleteShoppingAmount(id string) error {
 }
 
 // DeleteShoppingMemo implements domainmodel.ShoppingRepository.
-func (s *shoppingRepository) DeleteShoppingMemo(id string) error {
-	panic("unimplemented")
+func (s *shoppingRepository) DeleteShoppingMemo(id domainmodel.ShoppingID) error {
+	model := models.ShoppingMemo{
+		Base: models.Base{
+			ID: uint(id),
+		},
+	}
+
+	if err := s.db.Delete(&model).Error; err != nil {
+		return err
+	}
+	return nil
 }
 
 // FetchShoppingAmountItem implements domainmodel.ShoppingRepository.

@@ -43,7 +43,7 @@ type ShoppingRepository interface {
 	RegisterShoppingMemo(shopping *ShoppingMemo) error
 	FetchShoppingMemoItem(householdID HouseHoldID) ([]*ShoppingMemo, error)
 	UpdateShoppingMemo(shopping *ShoppingMemo) error
-	DeleteShoppingMemo(id string) error
+	DeleteShoppingMemo(id ShoppingID) error
 	RegisterShoppingAmount(shopping *ShoppingAmount) error
 	FetchShoppingAmountItem(id string) (*ShoppingAmount, error)
 	UpdateShoppingAmount(shopping *ShoppingAmount) error
