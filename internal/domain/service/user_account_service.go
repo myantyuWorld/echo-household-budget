@@ -57,7 +57,7 @@ func (s *userAccountService) CreateUserAccount(lineUserInfo *domainmodel.LINEUse
 	for _, categoryLimit := range householdBook.CategoryLimit {
 		err = s.categoryRepository.CreateHouseHoldCategory(&domainmodel.CategoryLimit{
 			HouseholdBookID: householdBook.ID,
-			CategoryID:      categoryLimit.CategoryID,
+			Category:        categoryLimit.Category,
 			LimitAmount:     categoryLimit.LimitAmount,
 		})
 		if err != nil {

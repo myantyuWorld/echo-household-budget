@@ -3,7 +3,9 @@ package repository
 import (
 	domainmodel "echo-household-budget/internal/domain/model"
 	"echo-household-budget/internal/infrastructure/persistence/models"
+	"fmt"
 
+	"github.com/davecgh/go-spew/spew"
 	"gorm.io/gorm"
 )
 
@@ -24,6 +26,11 @@ func (r *UserAccountRepository) fetchUserAccount(condition string, args ...inter
 		return nil, err
 	}
 
+	fmt.Println("===============")
+	fmt.Println("func (r *UserAccountRepository) fetchUserAccount(condition string, args ...interface{}) (*domainmodel.UserAccount, error) {")
+	spew.Dump(userAccount)
+	fmt.Println("===============")
+
 	// 関連テーブルの値をドメインモデルに変換
 	householdBooks := make([]*domainmodel.HouseHold, len(userAccount.HouseholdBooks))
 	var categoryLimits []*domainmodel.CategoryLimit
@@ -40,8 +47,12 @@ func (r *UserAccountRepository) fetchUserAccount(condition string, args ...inter
 			categoryLimits = append(categoryLimits, &domainmodel.CategoryLimit{
 				ID:              domainmodel.CategoryLimitID(cl.ID),
 				HouseholdBookID: domainmodel.HouseHoldID(cl.HouseholdBookID),
-				CategoryID:      domainmodel.CategoryID(cl.CategoryID),
-				LimitAmount:     cl.LimitAmount,
+				Category: domainmodel.Category{
+					ID:    domainmodel.CategoryID(cl.Category.ID),
+					Name:  cl.Category.Name,
+					Color: cl.Category.Color,
+				},
+				LimitAmount: cl.LimitAmount,
 			})
 		}
 

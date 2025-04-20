@@ -124,7 +124,7 @@ func TestUserAccountRepository_FindByLINEUserID(t *testing.T) {
 
 	assert.Len(t, foundAccount.HouseholdBooks[0].CategoryLimit, 1)
 	assert.Equal(t, domainmodel.HouseHoldID(1), foundAccount.HouseholdBooks[0].CategoryLimit[0].HouseholdBookID)
-	assert.Equal(t, domainmodel.CategoryID(1), foundAccount.HouseholdBooks[0].CategoryLimit[0].CategoryID)
+	assert.Equal(t, domainmodel.CategoryID(1), foundAccount.HouseholdBooks[0].CategoryLimit[0].Category.ID)
 	assert.Equal(t, 10000, foundAccount.HouseholdBooks[0].CategoryLimit[0].LimitAmount)
 }
 
@@ -196,6 +196,6 @@ func TestUserAccountRepository_FetchMe(t *testing.T) {
 
 	assert.Len(t, foundAccount.HouseholdBooks[0].CategoryLimit, 1)
 	assert.Equal(t, domainmodel.HouseHoldID(1), foundAccount.HouseholdBooks[0].CategoryLimit[0].HouseholdBookID)
-	assert.Equal(t, domainmodel.CategoryID(1), foundAccount.HouseholdBooks[0].CategoryLimit[0].CategoryID)
+	assert.Equal(t, domainmodel.CategoryID(1), foundAccount.HouseholdBooks[0].CategoryLimit[0].Category.ID)
 	assert.Equal(t, 10000, foundAccount.HouseholdBooks[0].CategoryLimit[0].LimitAmount)
 }
