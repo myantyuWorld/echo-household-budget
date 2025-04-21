@@ -209,22 +209,44 @@ paths:
           $ref: '#/components/responses/NotFoundError'
         default:
           $ref: '#/components/responses/GeneralError'
-  /household/share:
+  /household/user/{id}:
+    get:
+      tags:
+        - 家計簿
+      summary: 家計簿ユーザー取得
+      description: 家計簿ユーザーを取得する
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        200:
+          $ref: '#/components/responses/FetchMe'
+        401:
+          $ref: '#/components/responses/UnauthorizedError'
+        404:
+          $ref: '#/components/responses/NotFoundError'
+        default:
+          $ref: '#/components/responses/GeneralError'
+  /household/{householdID}/share/{inviteUserID}:
     post:
       tags:
         - 家計簿
       summary: 家計簿共有
       description: 家計簿を共有する
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              properties:
-                householdID:
-                  type: integer
-                inviteUserID:
-                  type: integer
+      parameters:
+        - name: householdID
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: inviteUserID
+          in: path
+          required: true
+          schema:
+            type: integer
       responses:
         200:
           description: OK

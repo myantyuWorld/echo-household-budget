@@ -55,7 +55,9 @@ func main() {
 	categoryRepository := repository.NewCategoryRepository(db)
 	houseHoldRepository := repository.NewHouseHoldRepository(db)
 	shoppingRepository := repository.NewShoppingRepository(db)
+
 	userAccountService := domainService.NewUserAccountService(userAccountRepository, categoryRepository, houseHoldRepository)
+	houseHoldService := domainService.NewHouseHoldService(houseHoldRepository)
 
 	// サービスの初期化
 	sessionManager := usecase.NewSessionManager()
@@ -66,6 +68,7 @@ func main() {
 	// ハンドラーの初期化
 	kaimemoHandler := handler.NewKaimemoHandler(kaimemoService, shoppingUsecase)
 	lineAuthHandler := handler.NewLineAuthHandler(lineAuthService, appConfig)
+	houseHoldHandler := handler.NewHouseHoldHandler(houseHoldService, userAccountService)
 
 	e.GET("/health", func(c echo.Context) error {
 		return c.JSON(http.StatusOK, map[string]string{
@@ -82,6 +85,12 @@ func main() {
 	kaimemo.GET("/summary", kaimemoHandler.FetchKaimemoSummaryRecord)
 	kaimemo.POST("/summary", kaimemoHandler.CreateKaimemoAmount)
 	kaimemo.DELETE("/summary/:id", kaimemoHandler.RemoveKaimemoAmount)
+
+	// 家計簿関連のエンドポイント
+	houseHold := e.Group("/household", middleware.AuthMiddleware(sessionManager, userAccountRepository))
+	houseHold.GET("/:id", houseHoldHandler.FetchHouseHold)
+	houseHold.GET("/user/:id", houseHoldHandler.FetchHouseHoldUser)
+	houseHold.POST("/:householdID/share/:inviteUserID", houseHoldHandler.ShareHouseHold)
 
 	// LINE認証関連のエンドポイント
 	lineAuth := e.Group("/line")
