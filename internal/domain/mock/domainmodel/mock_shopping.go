@@ -55,7 +55,7 @@ func (mr *MockShoppingRepositoryMockRecorder) DeleteShoppingAmount(id any) *gomo
 }
 
 // DeleteShoppingMemo mocks base method.
-func (m *MockShoppingRepository) DeleteShoppingMemo(id string) error {
+func (m *MockShoppingRepository) DeleteShoppingMemo(id domainmodel.ShoppingID) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "DeleteShoppingMemo", id)
 	ret0, _ := ret[0].(error)
@@ -84,18 +84,18 @@ func (mr *MockShoppingRepositoryMockRecorder) FetchShoppingAmountItem(id any) *g
 }
 
 // FetchShoppingMemoItem mocks base method.
-func (m *MockShoppingRepository) FetchShoppingMemoItem(id string) (*domainmodel.ShoppingMemo, error) {
+func (m *MockShoppingRepository) FetchShoppingMemoItem(householdID domainmodel.HouseHoldID) ([]*domainmodel.ShoppingMemo, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "FetchShoppingMemoItem", id)
-	ret0, _ := ret[0].(*domainmodel.ShoppingMemo)
+	ret := m.ctrl.Call(m, "FetchShoppingMemoItem", householdID)
+	ret0, _ := ret[0].([]*domainmodel.ShoppingMemo)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // FetchShoppingMemoItem indicates an expected call of FetchShoppingMemoItem.
-func (mr *MockShoppingRepositoryMockRecorder) FetchShoppingMemoItem(id any) *gomock.Call {
+func (mr *MockShoppingRepositoryMockRecorder) FetchShoppingMemoItem(householdID any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FetchShoppingMemoItem", reflect.TypeOf((*MockShoppingRepository)(nil).FetchShoppingMemoItem), id)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FetchShoppingMemoItem", reflect.TypeOf((*MockShoppingRepository)(nil).FetchShoppingMemoItem), householdID)
 }
 
 // RegisterShoppingAmount mocks base method.

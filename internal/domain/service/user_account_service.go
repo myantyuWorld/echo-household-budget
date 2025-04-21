@@ -11,12 +11,22 @@ import (
 type UserAccountService interface {
 	CreateUserAccount(lineUserInfo *domainmodel.LINEUserInfo) error
 	IsDuplicateUserAccount(lineUserID domainmodel.LINEUserID) (bool, error)
+	FetchUserAccount(userID domainmodel.UserID) (*domainmodel.UserAccount, error)
 }
 
 type userAccountService struct {
 	userAccountRepository domainmodel.UserAccountRepository
 	categoryRepository    domainmodel.CategoryRepository
 	houseHoldRepository   domainmodel.HouseHoldRepository
+}
+
+// FetchUserAccount implements UserAccountService.
+func (s *userAccountService) FetchUserAccount(userID domainmodel.UserID) (*domainmodel.UserAccount, error) {
+	account, err := s.userAccountRepository.FetchMe(userID)
+	if err != nil {
+		return nil, err
+	}
+	return account, nil
 }
 
 // IsDuplicateUserAccount implements UserAccountService.

@@ -50,7 +50,32 @@ func (h *HouseHoldRepository) Delete(houseHoldID domainmodel.HouseHoldID) error 
 
 // FindByHouseHoldID implements domainmodel.HouseHoldRepository.
 func (h *HouseHoldRepository) FindByHouseHoldID(houseHoldID domainmodel.HouseHoldID) (*domainmodel.HouseHold, error) {
-	panic("unimplemented")
+	model := &models.HouseholdBook{}
+	if err := h.db.Where("id = ?", houseHoldID).
+		Preload("CategoryLimits").
+		Preload("CategoryLimits.Category").
+		First(model).Error; err != nil {
+		return nil, err
+	}
+
+	categoryLimits := make([]*domainmodel.CategoryLimit, len(model.CategoryLimits))
+	for i, categoryLimit := range model.CategoryLimits {
+		categoryLimits[i] = &domainmodel.CategoryLimit{
+			Category: domainmodel.Category{
+				ID:    domainmodel.CategoryID(categoryLimit.Category.ID),
+				Name:  categoryLimit.Category.Name,
+				Color: categoryLimit.Category.Color,
+			},
+			LimitAmount: categoryLimit.LimitAmount,
+		}
+	}
+
+	return &domainmodel.HouseHold{
+		ID:            domainmodel.HouseHoldID(model.ID),
+		Title:         model.Title,
+		Description:   model.Description,
+		CategoryLimit: categoryLimits,
+	}, nil
 }
 
 // FindByUserID implements domainmodel.HouseHoldRepository.

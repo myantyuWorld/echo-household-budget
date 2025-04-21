@@ -188,6 +188,74 @@ paths:
           $ref: '#/components/responses/NotFoundError'
         default:
           $ref: '#/components/responses/GeneralError'
+  /household/{id}:
+    get:
+      tags:
+        - 家計簿
+      summary: 家計簿取得
+      description: 家計簿を取得する
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        200:
+          $ref: '#/components/responses/GetHousehold'
+        401:
+          $ref: '#/components/responses/UnauthorizedError'
+        404:
+          $ref: '#/components/responses/NotFoundError'
+        default:
+          $ref: '#/components/responses/GeneralError'
+  /household/user/{id}:
+    get:
+      tags:
+        - 家計簿
+      summary: 家計簿ユーザー取得
+      description: 家計簿ユーザーを取得する
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        200:
+          $ref: '#/components/responses/FetchMe'
+        401:
+          $ref: '#/components/responses/UnauthorizedError'
+        404:
+          $ref: '#/components/responses/NotFoundError'
+        default:
+          $ref: '#/components/responses/GeneralError'
+  /household/{householdID}/share/{inviteUserID}:
+    post:
+      tags:
+        - 家計簿
+      summary: 家計簿共有
+      description: 家計簿を共有する
+      parameters:
+        - name: householdID
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: inviteUserID
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        200:
+          description: OK
+        401:
+          $ref: '#/components/responses/UnauthorizedError'
+        404:
+          $ref: '#/components/responses/NotFoundError'
+        default:
+          $ref: '#/components/responses/GeneralError'
 components:
   responses:
     FetchMe:
@@ -218,7 +286,23 @@ components:
       description: The specified resource was not found
     GeneralError:
       description: Unexpected error
+    GetHousehold:
+      description: 家計簿取得
+      content:
+        application/json:
+          schema:
+            type : object
+            $ref: '#/components/schemas/HouseholdBook'
   schemas:
+    UserAccount:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        pictureURL:
+          type: string
     FetchMe:
       type: object
       properties:
@@ -312,6 +396,10 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/CategoryLimit'
+        users:
+          type: array
+          items:
+            $ref: '#/components/schemas/UserAccount'
     CategoryLimit:
       type: object
       properties:

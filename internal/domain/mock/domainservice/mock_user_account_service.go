@@ -54,6 +54,21 @@ func (mr *MockUserAccountServiceMockRecorder) CreateUserAccount(lineUserInfo any
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateUserAccount", reflect.TypeOf((*MockUserAccountService)(nil).CreateUserAccount), lineUserInfo)
 }
 
+// FetchUserAccount mocks base method.
+func (m *MockUserAccountService) FetchUserAccount(userID domainmodel.UserID) (*domainmodel.UserAccount, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FetchUserAccount", userID)
+	ret0, _ := ret[0].(*domainmodel.UserAccount)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// FetchUserAccount indicates an expected call of FetchUserAccount.
+func (mr *MockUserAccountServiceMockRecorder) FetchUserAccount(userID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FetchUserAccount", reflect.TypeOf((*MockUserAccountService)(nil).FetchUserAccount), userID)
+}
+
 // IsDuplicateUserAccount mocks base method.
 func (m *MockUserAccountService) IsDuplicateUserAccount(lineUserID domainmodel.LINEUserID) (bool, error) {
 	m.ctrl.T.Helper()
