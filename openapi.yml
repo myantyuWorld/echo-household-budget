@@ -230,6 +230,89 @@ paths:
           $ref: '#/components/responses/NotFoundError'
         default:
           $ref: '#/components/responses/GeneralError'
+  /household/{householdID}/shopping/record:
+    get:
+      tags:
+        - 買い物記録
+      summary: 買い物記録取得
+      description: 買い物記録を取得する
+      parameters:
+        - name: householdID
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        200:
+          $ref: '#/components/responses/GetShoppingRecord'
+        401:
+          $ref: '#/components/responses/UnauthorizedError'
+        404:
+          $ref: '#/components/responses/NotFoundError'
+        default:
+          $ref: '#/components/responses/GeneralError'
+    post:
+      tags:
+        - 買い物記録
+      summary: 買い物記録追加
+      description: 買い物記録を追加する
+      parameters:
+        - name: householdID
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              properties:
+                householdID:
+                  type: integer
+                categoryID:
+                  type: integer
+                amount:
+                  type: integer
+                date:
+                  type: string
+                memo:
+                  type: string
+      responses:
+        200:
+          description: OK
+        401:
+          $ref: '#/components/responses/UnauthorizedError'
+        404:
+          $ref: '#/components/responses/NotFoundError'
+        default:
+          $ref: '#/components/responses/GeneralError'
+  /household/{householdID}/shopping/record/{shoppingID}:
+    delete:
+      tags:
+        - 買い物記録
+      summary: 買い物記録削除
+      description: 買い物記録を削除する
+      parameters:
+        - name: householdID
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: shoppingID
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        200:
+          description: OK
+        401:
+          $ref: '#/components/responses/UnauthorizedError'
+        404:
+          $ref: '#/components/responses/NotFoundError'
+        default:
+          $ref: '#/components/responses/GeneralError'
   /household/{householdID}/share/{inviteUserID}:
     post:
       tags:
@@ -258,6 +341,13 @@ paths:
           $ref: '#/components/responses/GeneralError'
 components:
   responses:
+    GetShoppingRecord:
+      description: 買い物記録取得
+      content:
+        application/json:
+          schema:
+            type: object
+            $ref: '#/components/schemas/SummarizeShoppingAmount'
     FetchMe:
       description: ユーザー情報取得
       content:
@@ -435,3 +525,36 @@ components:
           type: string
         isCompleted:
           type: boolean
+    ShoppingRecord:
+      type: object
+      properties:
+        id:
+          type: integer
+        amount:
+          type: integer
+        date:
+          type: string
+        memo:
+          type: string
+        category:
+          $ref: '#/components/schemas/Category'
+    CategoryAmount:
+      type: object
+      properties:
+        category:
+          $ref: '#/components/schemas/Category'
+        amount:
+          type: integer
+    SummarizeShoppingAmount:
+      type: object
+      properties:
+        shoppingAmounts:
+          type: array
+          items:
+            $ref: '#/components/schemas/ShoppingRecord'
+        totalAmount:
+          type: integer
+        categoryAmounts:
+          type: array
+          items:
+            $ref: '#/components/schemas/CategoryAmount'

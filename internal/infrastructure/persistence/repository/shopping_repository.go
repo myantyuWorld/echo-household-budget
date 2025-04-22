@@ -16,8 +16,27 @@ func NewShoppingRepository(db *gorm.DB) domainmodel.ShoppingRepository {
 }
 
 // DeleteShoppingAmount implements domainmodel.ShoppingRepository.
-func (s *shoppingRepository) DeleteShoppingAmount(id string) error {
-	panic("unimplemented")
+func (s *shoppingRepository) DeleteShoppingAmount(id domainmodel.ShoppingID) error {
+	model := models.ShoppingAmount{
+		Base: models.Base{
+			ID: uint(id),
+		},
+	}
+
+	if err := s.db.Delete(&model).Error; err != nil {
+		return err
+	}
+	return nil
+}
+
+// FetchShoppingAmountItemByHouseholdID implements domainmodel.ShoppingRepository.
+func (s *shoppingRepository) FetchShoppingAmountItemByHouseholdID(householdID domainmodel.HouseHoldID) ([]*models.ShoppingAmount, error) {
+	model := []*models.ShoppingAmount{}
+	if err := s.db.Where("household_book_id = ?", householdID).Preload("Category").Find(&model).Error; err != nil {
+		return nil, err
+	}
+
+	return model, nil
 }
 
 // DeleteShoppingMemo implements domainmodel.ShoppingRepository.
@@ -32,11 +51,6 @@ func (s *shoppingRepository) DeleteShoppingMemo(id domainmodel.ShoppingID) error
 		return err
 	}
 	return nil
-}
-
-// FetchShoppingAmountItem implements domainmodel.ShoppingRepository.
-func (s *shoppingRepository) FetchShoppingAmountItem(id string) (*domainmodel.ShoppingAmount, error) {
-	panic("unimplemented")
 }
 
 // FetchShoppingMemoItem implements domainmodel.ShoppingRepository.
@@ -61,8 +75,11 @@ func (s *shoppingRepository) FetchShoppingMemoItem(householdID domainmodel.House
 }
 
 // RegisterShoppingAmount implements domainmodel.ShoppingRepository.
-func (s *shoppingRepository) RegisterShoppingAmount(shopping *domainmodel.ShoppingAmount) error {
-	panic("unimplemented")
+func (s *shoppingRepository) RegisterShoppingAmount(shopping *models.ShoppingAmount) error {
+	if err := s.db.Create(shopping).Error; err != nil {
+		return err
+	}
+	return nil
 }
 
 // RegisterShoppingMemo implements domainmodel.ShoppingRepository.
@@ -79,14 +96,4 @@ func (s *shoppingRepository) RegisterShoppingMemo(shopping *domainmodel.Shopping
 		return err
 	}
 	return nil
-}
-
-// UpdateShoppingAmount implements domainmodel.ShoppingRepository.
-func (s *shoppingRepository) UpdateShoppingAmount(shopping *domainmodel.ShoppingAmount) error {
-	panic("unimplemented")
-}
-
-// UpdateShoppingMemo implements domainmodel.ShoppingRepository.
-func (s *shoppingRepository) UpdateShoppingMemo(shopping *domainmodel.ShoppingMemo) error {
-	panic("unimplemented")
 }
