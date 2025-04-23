@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/labstack/echo/v4"
 )
@@ -21,6 +22,52 @@ type CreateShoppingRecordRequest struct {
 	Amount      int    `json:"amount"`
 	Date        string `json:"date"`
 	Memo        string `json:"memo"`
+}
+
+type AddHouseHoldCategoryRequest struct {
+	HouseholdID         uint   `json:"householdID" param:"householdID"`
+	CategoryName        string `json:"categoryName"`
+	CategoryLimitAmount int    `json:"categoryLimitAmount"`
+}
+
+type AddHouseHoldRequest struct {
+	UserID      uint   `json:"id" param:"id"`
+	Title       string `json:"title"`
+	Description string `json:"description"`
+}
+
+// AddHouseHold implements HouseHoldHandler.
+func (h *houseHoldHandler) AddHouseHold(c echo.Context) error {
+	req := AddHouseHoldRequest{}
+	if err := c.Bind(&req); err != nil {
+		return c.JSON(http.StatusBadRequest, err.Error())
+	}
+
+	houseHold := domainmodel.HouseHold{
+		UserID:      domainmodel.UserID(req.UserID),
+		Title:       req.Title,
+		Description: req.Description,
+	}
+
+	if err := h.service.AddUserHouseHold(&houseHold); err != nil {
+		return c.JSON(http.StatusInternalServerError, err.Error())
+	}
+
+	return c.JSON(http.StatusOK, "success")
+}
+
+// AddHouseHoldCategory implements HouseHoldHandler.
+func (h *houseHoldHandler) AddHouseHoldCategory(c echo.Context) error {
+	req := AddHouseHoldCategoryRequest{}
+	if err := c.Bind(&req); err != nil {
+		return c.JSON(http.StatusBadRequest, err.Error())
+	}
+
+	if err := h.service.AddHouseHoldCategory(domainmodel.HouseHoldID(req.HouseholdID), req.CategoryName, req.CategoryLimitAmount); err != nil {
+		return c.JSON(http.StatusInternalServerError, err.Error())
+	}
+
+	return c.JSON(http.StatusOK, "success")
 }
 
 // CreateShoppingRecord implements HouseHoldHandler.
@@ -49,11 +96,21 @@ func (h *houseHoldHandler) FetchShoppingRecord(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, err.Error())
 	}
 
+	date := c.QueryParam("date")
+	if date == "" {
+		date = time.Now().Format("2006-01")
+	}
+
+	input := domainservice.FetchShoppingRecordInput{
+		HouseholdID: domainmodel.HouseHoldID(uint(householdIDUint)),
+		Date:        date,
+	}
+
 	// TODO : 指定されていない場合は、今月のデータを取得する
 	// TODO : 指定されている場合は、指定された月のデータを取得する
 	// TODO : カテゴリ全ての、支出を計算して返す
 	// TODO : カテゴリごとの支出を計算して返す
-	results, err := h.service.SummarizeShoppingAmount(domainmodel.HouseHoldID(uint(householdIDUint)))
+	results, err := h.service.SummarizeShoppingAmount(input)
 	if err != nil {
 		log.Println(err)
 		return c.JSON(http.StatusInternalServerError, err.Error())
@@ -140,6 +197,8 @@ type HouseHoldHandler interface {
 	FetchHouseHold(c echo.Context) error
 	FetchHouseHoldUser(c echo.Context) error
 	ShareHouseHold(c echo.Context) error
+	AddHouseHoldCategory(c echo.Context) error
+	AddHouseHold(c echo.Context) error
 	// 買い物記録
 	FetchShoppingRecord(c echo.Context) error
 	CreateShoppingRecord(c echo.Context) error

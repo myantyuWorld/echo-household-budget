@@ -10,20 +10,70 @@ import (
 type HouseHoldService interface {
 	FetchHouseHold(houseHoldID domainmodel.HouseHoldID) (*domainmodel.HouseHold, error)
 	ShareHouseHold(houseHoldID domainmodel.HouseHoldID, inviteUserID domainmodel.UserID) error
-	FetchShoppingAmount(houseHoldID domainmodel.HouseHoldID) ([]*domainmodel.ShoppingAmount, error)
+	FetchShoppingAmount(input FetchShoppingRecordInput) ([]*domainmodel.ShoppingAmount, error)
+	AddUserHouseHold(houseHold *domainmodel.HouseHold) error
+	AddHouseHoldCategory(houseHoldID domainmodel.HouseHoldID, categoryName string, categoryLimitAmount int) error
 	CreateShoppingAmount(shoppingAmount *domainmodel.ShoppingAmount) error
 	RemoveShoppingAmount(shoppingAmountID domainmodel.ShoppingID) error
-	SummarizeShoppingAmount(houseHoldID domainmodel.HouseHoldID) (*domainmodel.SummarizeShoppingAmounts, error)
+	SummarizeShoppingAmount(input FetchShoppingRecordInput) (*domainmodel.SummarizeShoppingAmounts, error)
 }
 
 type houseHoldService struct {
 	houseHoldRepository domainmodel.HouseHoldRepository
 	shoppingRepository  domainmodel.ShoppingRepository
+	categoryRepository  domainmodel.CategoryRepository
+}
+
+// AddHouseHoldCategory implements HouseHoldService.
+func (h *houseHoldService) AddHouseHoldCategory(houseHoldID domainmodel.HouseHoldID, categoryName string, categoryLimitAmount int) error {
+	category := &domainmodel.Category{
+		Name:  categoryName,
+		Color: "#000000",
+	}
+
+	if err := h.categoryRepository.CreateMasterCategory(category); err != nil {
+		return err
+	}
+
+	categoryLimit := &domainmodel.CategoryLimit{
+		HouseholdBookID: houseHoldID,
+		Category:        *category,
+		LimitAmount:     categoryLimitAmount,
+	}
+
+	if err := h.categoryRepository.CreateHouseHoldCategory(categoryLimit); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// AddUserHouseHold implements HouseHoldService.
+func (h *houseHoldService) AddUserHouseHold(houseHold *domainmodel.HouseHold) error {
+	if err := h.houseHoldRepository.Create(houseHold); err != nil {
+		return err
+	}
+
+	userHouseHold := &domainmodel.UserHouseHold{
+		HouseHoldID: houseHold.ID,
+		UserID:      houseHold.UserID,
+	}
+
+	if err := h.houseHoldRepository.CreateUserHouseHold(userHouseHold); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+type FetchShoppingRecordInput struct {
+	HouseholdID domainmodel.HouseHoldID
+	Date        string
 }
 
 // SummarizeShoppingAmount implements HouseHoldService.
-func (h *houseHoldService) SummarizeShoppingAmount(houseHoldID domainmodel.HouseHoldID) (*domainmodel.SummarizeShoppingAmounts, error) {
-	results, err := h.FetchShoppingAmount(houseHoldID)
+func (h *houseHoldService) SummarizeShoppingAmount(input FetchShoppingRecordInput) (*domainmodel.SummarizeShoppingAmounts, error) {
+	results, err := h.FetchShoppingAmount(input)
 	if err != nil {
 		return nil, err
 	}
@@ -54,8 +104,8 @@ func (h *houseHoldService) CreateShoppingAmount(shoppingAmount *domainmodel.Shop
 }
 
 // FetchShoppingAmount implements HouseHoldService.
-func (h *houseHoldService) FetchShoppingAmount(houseHoldID domainmodel.HouseHoldID) ([]*domainmodel.ShoppingAmount, error) {
-	shoppingAmount, err := h.shoppingRepository.FetchShoppingAmountItemByHouseholdID(houseHoldID)
+func (h *houseHoldService) FetchShoppingAmount(input FetchShoppingRecordInput) ([]*domainmodel.ShoppingAmount, error) {
+	shoppingAmount, err := h.shoppingRepository.FetchShoppingAmountItemByHouseholdID(input.HouseholdID, input.Date)
 	if err != nil {
 		return nil, err
 	}
@@ -91,9 +141,10 @@ func (h *houseHoldService) ShareHouseHold(houseHoldID domainmodel.HouseHoldID, i
 	return h.houseHoldRepository.CreateUserHouseHold(userHouseHold)
 }
 
-func NewHouseHoldService(houseHoldRepository domainmodel.HouseHoldRepository, shoppingRepository domainmodel.ShoppingRepository) HouseHoldService {
+func NewHouseHoldService(houseHoldRepository domainmodel.HouseHoldRepository, shoppingRepository domainmodel.ShoppingRepository, categoryRepository domainmodel.CategoryRepository) HouseHoldService {
 	return &houseHoldService{
 		houseHoldRepository: houseHoldRepository,
 		shoppingRepository:  shoppingRepository,
+		categoryRepository:  categoryRepository,
 	}
 }
