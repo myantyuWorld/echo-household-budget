@@ -242,6 +242,13 @@ paths:
           required: true
           schema:
             type: integer
+        - in : query
+          name: date
+          schema:
+            type: string
+            required:
+              - date
+            example: '2020-01-01'
       responses:
         200:
           $ref: '#/components/responses/GetShoppingRecord'
