@@ -10,10 +10,10 @@ import (
 type HouseHoldService interface {
 	FetchHouseHold(houseHoldID domainmodel.HouseHoldID) (*domainmodel.HouseHold, error)
 	ShareHouseHold(houseHoldID domainmodel.HouseHoldID, inviteUserID domainmodel.UserID) error
-	FetchShoppingAmount(houseHoldID domainmodel.HouseHoldID) ([]*domainmodel.ShoppingAmount, error)
+	FetchShoppingAmount(input FetchShoppingRecordInput) ([]*domainmodel.ShoppingAmount, error)
 	CreateShoppingAmount(shoppingAmount *domainmodel.ShoppingAmount) error
 	RemoveShoppingAmount(shoppingAmountID domainmodel.ShoppingID) error
-	SummarizeShoppingAmount(houseHoldID domainmodel.HouseHoldID) (*domainmodel.SummarizeShoppingAmounts, error)
+	SummarizeShoppingAmount(input FetchShoppingRecordInput) (*domainmodel.SummarizeShoppingAmounts, error)
 }
 
 type houseHoldService struct {
@@ -21,9 +21,14 @@ type houseHoldService struct {
 	shoppingRepository  domainmodel.ShoppingRepository
 }
 
+type FetchShoppingRecordInput struct {
+	HouseholdID domainmodel.HouseHoldID
+	Date        string
+}
+
 // SummarizeShoppingAmount implements HouseHoldService.
-func (h *houseHoldService) SummarizeShoppingAmount(houseHoldID domainmodel.HouseHoldID) (*domainmodel.SummarizeShoppingAmounts, error) {
-	results, err := h.FetchShoppingAmount(houseHoldID)
+func (h *houseHoldService) SummarizeShoppingAmount(input FetchShoppingRecordInput) (*domainmodel.SummarizeShoppingAmounts, error) {
+	results, err := h.FetchShoppingAmount(input)
 	if err != nil {
 		return nil, err
 	}
@@ -54,8 +59,8 @@ func (h *houseHoldService) CreateShoppingAmount(shoppingAmount *domainmodel.Shop
 }
 
 // FetchShoppingAmount implements HouseHoldService.
-func (h *houseHoldService) FetchShoppingAmount(houseHoldID domainmodel.HouseHoldID) ([]*domainmodel.ShoppingAmount, error) {
-	shoppingAmount, err := h.shoppingRepository.FetchShoppingAmountItemByHouseholdID(houseHoldID)
+func (h *houseHoldService) FetchShoppingAmount(input FetchShoppingRecordInput) ([]*domainmodel.ShoppingAmount, error) {
+	shoppingAmount, err := h.shoppingRepository.FetchShoppingAmountItemByHouseholdID(input.HouseholdID, input.Date)
 	if err != nil {
 		return nil, err
 	}

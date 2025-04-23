@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/labstack/echo/v4"
 )
@@ -49,11 +50,21 @@ func (h *houseHoldHandler) FetchShoppingRecord(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, err.Error())
 	}
 
+	date := c.QueryParam("date")
+	if date == "" {
+		date = time.Now().Format("2006-01")
+	}
+
+	input := domainservice.FetchShoppingRecordInput{
+		HouseholdID: domainmodel.HouseHoldID(uint(householdIDUint)),
+		Date:        date,
+	}
+
 	// TODO : 指定されていない場合は、今月のデータを取得する
 	// TODO : 指定されている場合は、指定された月のデータを取得する
 	// TODO : カテゴリ全ての、支出を計算して返す
 	// TODO : カテゴリごとの支出を計算して返す
-	results, err := h.service.SummarizeShoppingAmount(domainmodel.HouseHoldID(uint(householdIDUint)))
+	results, err := h.service.SummarizeShoppingAmount(input)
 	if err != nil {
 		log.Println(err)
 		return c.JSON(http.StatusInternalServerError, err.Error())

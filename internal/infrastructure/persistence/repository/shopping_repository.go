@@ -3,6 +3,7 @@ package repository
 import (
 	domainmodel "echo-household-budget/internal/domain/model"
 	"echo-household-budget/internal/infrastructure/persistence/models"
+	"time"
 
 	"gorm.io/gorm"
 )
@@ -30,9 +31,17 @@ func (s *shoppingRepository) DeleteShoppingAmount(id domainmodel.ShoppingID) err
 }
 
 // FetchShoppingAmountItemByHouseholdID implements domainmodel.ShoppingRepository.
-func (s *shoppingRepository) FetchShoppingAmountItemByHouseholdID(householdID domainmodel.HouseHoldID) ([]*models.ShoppingAmount, error) {
+func (s *shoppingRepository) FetchShoppingAmountItemByHouseholdID(householdID domainmodel.HouseHoldID, date string) ([]*models.ShoppingAmount, error) {
+	dateTime, err := time.Parse("2006-01-02", date)
+	if err != nil {
+		return nil, err
+	}
+
+	startDateMonth := time.Date(dateTime.Year(), dateTime.Month(), 1, 0, 0, 0, 0, dateTime.Location())
+	endDateMonth := startDateMonth.AddDate(0, 1, 0)
+
 	model := []*models.ShoppingAmount{}
-	if err := s.db.Where("household_book_id = ?", householdID).Preload("Category").Find(&model).Error; err != nil {
+	if err := s.db.Debug().Where("household_book_id = ? AND date BETWEEN ? AND ?", householdID, startDateMonth, endDateMonth).Preload("Category").Find(&model).Error; err != nil {
 		return nil, err
 	}
 

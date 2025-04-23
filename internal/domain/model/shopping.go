@@ -121,6 +121,6 @@ type ShoppingRepository interface {
 	FetchShoppingMemoItem(householdID HouseHoldID) ([]*ShoppingMemo, error)
 	DeleteShoppingMemo(id ShoppingID) error
 	RegisterShoppingAmount(shopping *models.ShoppingAmount) error
-	FetchShoppingAmountItemByHouseholdID(householdID HouseHoldID) ([]*models.ShoppingAmount, error)
+	FetchShoppingAmountItemByHouseholdID(householdID HouseHoldID, date string) ([]*models.ShoppingAmount, error)
 	DeleteShoppingAmount(id ShoppingID) error
 }
