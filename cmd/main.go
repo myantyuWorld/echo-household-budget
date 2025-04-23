@@ -57,7 +57,7 @@ func main() {
 	shoppingRepository := repository.NewShoppingRepository(db)
 
 	userAccountService := domainService.NewUserAccountService(userAccountRepository, categoryRepository, houseHoldRepository)
-	houseHoldService := domainService.NewHouseHoldService(houseHoldRepository)
+	houseHoldService := domainService.NewHouseHoldService(houseHoldRepository, shoppingRepository)
 
 	// サービスの初期化
 	sessionManager := usecase.NewSessionManager()
@@ -91,6 +91,9 @@ func main() {
 	houseHold.GET("/:id", houseHoldHandler.FetchHouseHold)
 	houseHold.GET("/user/:id", houseHoldHandler.FetchHouseHoldUser)
 	houseHold.POST("/:householdID/share/:inviteUserID", houseHoldHandler.ShareHouseHold)
+	houseHold.GET("/:householdID/shopping/record", houseHoldHandler.FetchShoppingRecord)
+	houseHold.POST("/:householdID/shopping/record", houseHoldHandler.CreateShoppingRecord)
+	houseHold.DELETE("/:householdID/shopping/record/:shoppingID", houseHoldHandler.RemoveShoppingRecord)
 
 	// LINE認証関連のエンドポイント
 	lineAuth := e.Group("/line")

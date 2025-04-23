@@ -1,7 +1,9 @@
 //go:generate mockgen -source=$GOFILE -destination=../mock/$GOPACKAGE/mock_$GOFILE -package=mock
 package domainmodel
 
-import "time"
+import (
+	"echo-household-budget/internal/infrastructure/persistence/models"
+)
 
 type ShoppingMemo struct {
 	ID          ShoppingID  `json:"id"`
@@ -17,8 +19,73 @@ type ShoppingAmount struct {
 	HouseholdID HouseHoldID `json:"household_id"`
 	CategoryID  CategoryID  `json:"category_id"`
 	Amount      int         `json:"amount"`
-	Date        time.Time   `json:"date"`
+	Date        string      `json:"date"`
 	Memo        string      `json:"memo"`
+	Category    Category    `json:"category"`
+}
+
+type CategoryAmount struct {
+	Category Category `json:"category"`
+	Amount   int      `json:"amount"`
+}
+
+type ShoppingAmounts []*ShoppingAmount
+type CategoryAmounts []*CategoryAmount
+
+type SummarizeShoppingAmounts struct {
+	ShoppingAmounts ShoppingAmounts `json:"shoppingAmounts"`
+	TotalAmount     int             `json:"totalAmount"`
+	CategoryAmounts CategoryAmounts `json:"categoryAmounts"`
+}
+
+func (s *ShoppingAmounts) SummarizeMonthlyGroupByCategory() CategoryAmounts {
+	amounts := CategoryAmounts{}
+	categoryMap := make(map[CategoryID]*CategoryAmount)
+	for _, amount := range *s {
+		if existing, ok := categoryMap[amount.CategoryID]; ok {
+			existing.Amount += amount.Amount
+		} else {
+			categoryMap[amount.CategoryID] = &CategoryAmount{
+				Category: amount.Category,
+				Amount:   amount.Amount,
+			}
+		}
+	}
+	for _, amount := range categoryMap {
+		amounts = append(amounts, amount)
+	}
+	return amounts
+}
+
+func (s *ShoppingAmounts) SummarizeMonthly() int {
+	amounts := 0
+	for _, amount := range *s {
+		amounts += amount.Amount
+	}
+	return amounts
+}
+
+func NewSummarizeShoppingAmounts(shoppingAmounts ShoppingAmounts) *SummarizeShoppingAmounts {
+	arr := ShoppingAmounts{}
+	arr = append(arr, shoppingAmounts...)
+
+	return &SummarizeShoppingAmounts{
+		ShoppingAmounts: arr,
+		TotalAmount:     arr.SummarizeMonthly(),
+		CategoryAmounts: arr.SummarizeMonthlyGroupByCategory(),
+	}
+}
+
+func ConvertShoppingAmountsToShoppingAmount(shoppingAmount *models.ShoppingAmount) *ShoppingAmount {
+	return &ShoppingAmount{
+		ID:          ShoppingID(shoppingAmount.ID),
+		HouseholdID: HouseHoldID(shoppingAmount.HouseholdBookID),
+		CategoryID:  CategoryID(shoppingAmount.CategoryID),
+		Amount:      shoppingAmount.Amount,
+		Date:        shoppingAmount.Date.Format("2006-01-02"),
+		Memo:        shoppingAmount.Memo,
+		Category:    Category{ID: CategoryID(shoppingAmount.CategoryID), Name: shoppingAmount.Category.Name, Color: shoppingAmount.Category.Color},
+	}
 }
 
 func NewShoppingMemo(householdID HouseHoldID, categoryID CategoryID, title string, memo string) *ShoppingMemo {
@@ -28,6 +95,16 @@ func NewShoppingMemo(householdID HouseHoldID, categoryID CategoryID, title strin
 		Title:       title,
 		Memo:        memo,
 		IsCompleted: NotDone,
+	}
+}
+
+func NewShoppingAmount(householdID HouseHoldID, categoryID CategoryID, amount int, date string, memo string) *ShoppingAmount {
+	return &ShoppingAmount{
+		HouseholdID: householdID,
+		CategoryID:  categoryID,
+		Amount:      amount,
+		Date:        date,
+		Memo:        memo,
 	}
 }
 
@@ -42,10 +119,8 @@ const (
 type ShoppingRepository interface {
 	RegisterShoppingMemo(shopping *ShoppingMemo) error
 	FetchShoppingMemoItem(householdID HouseHoldID) ([]*ShoppingMemo, error)
-	UpdateShoppingMemo(shopping *ShoppingMemo) error
 	DeleteShoppingMemo(id ShoppingID) error
-	RegisterShoppingAmount(shopping *ShoppingAmount) error
-	FetchShoppingAmountItem(id string) (*ShoppingAmount, error)
-	UpdateShoppingAmount(shopping *ShoppingAmount) error
-	DeleteShoppingAmount(id string) error
+	RegisterShoppingAmount(shopping *models.ShoppingAmount) error
+	FetchShoppingAmountItemByHouseholdID(householdID HouseHoldID) ([]*models.ShoppingAmount, error)
+	DeleteShoppingAmount(id ShoppingID) error
 }
