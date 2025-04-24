@@ -54,3 +54,6 @@ db-connect:
 
 db-logs:
 	docker compose logs -f db
+
+air:
+	air -c .air.toml
