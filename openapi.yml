@@ -230,6 +230,63 @@ paths:
           $ref: '#/components/responses/NotFoundError'
         default:
           $ref: '#/components/responses/GeneralError'
+    post:
+      tags:
+        - 家計簿
+      summary: 家計簿追加
+      description: 家計簿を追加する
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              properties:
+                title:
+                  type: string
+                description:
+                  type: string
+      responses:
+        200:
+          description: OK
+        401:
+          $ref: '#/components/responses/UnauthorizedError'
+        404:
+          $ref: '#/components/responses/NotFoundError'
+        default:
+          $ref: '#/components/responses/GeneralError'
+  /household/{householdID}/category:
+    post:
+      tags:
+        - 家計簿
+      summary: 家計簿カテゴリ追加
+      description: 家計簿カテゴリを追加する
+      parameters:
+        - name: householdID
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              properties:
+                categoryName:
+                  type: string
+                categoryLimitAmount:
+                  type: integer
+      responses:
+        200:
+          description: OK
+        401:
+          $ref: '#/components/responses/UnauthorizedError'
   /household/{householdID}/shopping/record:
     get:
       tags:

@@ -57,7 +57,7 @@ func main() {
 	shoppingRepository := repository.NewShoppingRepository(db)
 
 	userAccountService := domainService.NewUserAccountService(userAccountRepository, categoryRepository, houseHoldRepository)
-	houseHoldService := domainService.NewHouseHoldService(houseHoldRepository, shoppingRepository)
+	houseHoldService := domainService.NewHouseHoldService(houseHoldRepository, shoppingRepository, categoryRepository)
 
 	// サービスの初期化
 	sessionManager := usecase.NewSessionManager()
@@ -90,7 +90,9 @@ func main() {
 	houseHold := e.Group("/household", middleware.AuthMiddleware(sessionManager, userAccountRepository))
 	houseHold.GET("/:id", houseHoldHandler.FetchHouseHold)
 	houseHold.GET("/user/:id", houseHoldHandler.FetchHouseHoldUser)
+	houseHold.POST("/user/:id", houseHoldHandler.AddHouseHold)
 	houseHold.POST("/:householdID/share/:inviteUserID", houseHoldHandler.ShareHouseHold)
+	houseHold.POST("/:householdID/category", houseHoldHandler.AddHouseHoldCategory)
 	houseHold.GET("/:householdID/shopping/record", houseHoldHandler.FetchShoppingRecord)
 	houseHold.POST("/:householdID/shopping/record", houseHoldHandler.CreateShoppingRecord)
 	houseHold.DELETE("/:householdID/shopping/record/:shoppingID", houseHoldHandler.RemoveShoppingRecord)

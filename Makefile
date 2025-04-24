@@ -45,12 +45,12 @@ build:
 logs:
 	docker compose logs -f
 
-ps:
-	docker compose ps
-
 # データベース関連のコマンド
 db-connect:
 	docker exec -it echo-household-budget_db_1 psql -U postgres -d echo-household-budget
 
 db-logs:
 	docker compose logs -f db
+
+air:
+	air -c .air.toml
