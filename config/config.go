@@ -140,9 +140,9 @@ type AppConfig struct {
 }
 
 func LoadConfig() *AppConfig {
-	if err := godotenv.Load(); err != nil {
-		log.Printf("Warning: .env file not found")
-	}
+	// if err := godotenv.Load(); err != nil {
+	// 	log.Printf("Warning: .env file not found")
+	// }
 
 	// LINE OAuth2設定
 	lineConfig := &oauth2.Config{
