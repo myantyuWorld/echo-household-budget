@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 
-	// "github.com/joho/godotenv"
 	"golang.org/x/oauth2"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
