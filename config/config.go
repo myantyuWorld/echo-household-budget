@@ -3,7 +3,6 @@ package config
 import (
 	"echo-household-budget/internal/shared/errors"
 	"fmt"
-	"log"
 	"os"
 
 	"github.com/joho/godotenv"
@@ -54,13 +53,13 @@ type NotionConfig struct {
 // Load は環境変数から設定を読み込む
 func Load() (*Config, error) {
 	// .envファイルの読み込み
-	if err := godotenv.Load(); err != nil {
-		return nil, errors.NewAppError(
-			errors.ErrorCodeInternalError,
-			"Failed to load .env file",
-			err,
-		)
-	}
+	// if err := godotenv.Load(); err != nil {
+	// 	return nil, errors.NewAppError(
+	// 		errors.ErrorCodeInternalError,
+	// 		"Failed to load .env file",
+	// 		err,
+	// 	)
+	// }
 
 	config := &Config{
 		Server: ServerConfig{
