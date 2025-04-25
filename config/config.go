@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/joho/godotenv"
+	// "github.com/joho/godotenv"
 	"golang.org/x/oauth2"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -157,19 +157,19 @@ func LoadConfig() *AppConfig {
 
 	// データベース設定
 	dbConfig := &DatabaseConfig{
-		Host:     os.Getenv("DB_HOST"),
-		Port:     os.Getenv("DB_PORT"),
-		User:     os.Getenv("DB_USER"),
-		Password: os.Getenv("DB_PASSWORD"),
-		DBName:   os.Getenv("DB_NAME"),
-		SSLMode:  os.Getenv("DB_SSLMODE"),
+		Host:     getEnvWithDefault("DB_HOST", "localhost"),
+		Port:     getEnvWithDefault("DB_PORT", "35432"),
+		User:     getEnvWithDefault("DB_USER", "postgres"),
+		Password: getEnvWithDefault("DB_PASSWORD", "postgres"),
+		DBName:   getEnvWithDefault("DB_NAME", "echo-household-budget"),
+		SSLMode:  getEnvWithDefault("DB_SSLMODE", "disable"),
 	}
 
 	return &AppConfig{
 		Port:                                 getEnvWithDefault("PORT", "3000"),
-		NotionAPIKey:                         os.Getenv("NOTION_API_KEY"),
-		NotionKaimemoDatabaseInputID:         os.Getenv("NOTION_KAIMEMO_DB_INPUT_ID"),
-		NotionKaimemoDatabaseSummaryRecordID: os.Getenv("NOTION_KAIMEMO_DB_SUMMARY_ID"),
+		NotionAPIKey:                         getEnvWithDefault("NOTION_API_KEY", ""),
+		NotionKaimemoDatabaseInputID:         getEnvWithDefault("NOTION_KAIMEMO_DB_INPUT_ID", ""),
+		NotionKaimemoDatabaseSummaryRecordID: getEnvWithDefault("NOTION_KAIMEMO_DB_SUMMARY_ID", ""),
 		AllowOrigins:                         []string{os.Getenv("ALLOW_ORIGINS"), "https://access.line.me/oauth2/v2.1/authorize"},
 		LINEConfig:                           lineConfig,
 		LINELoginFrontendCallbackURL:         os.Getenv("LINE_LOGIN_FRONTEND_CALLBACK_URL"),
