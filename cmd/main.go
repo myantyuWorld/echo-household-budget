@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/labstack/echo/v4"
 	echomiddleware "github.com/labstack/echo/v4/middleware"
 )
@@ -19,6 +20,7 @@ import (
 func main() {
 	// 設定の読み込み
 	appConfig := config.LoadConfig()
+	spew.Dump(appConfig)
 
 	// Echoインスタンスの作成
 	e := echo.New()
