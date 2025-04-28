@@ -59,6 +59,13 @@ func Load() (*Config, error) {
 	// 		err,
 	// 	)
 	// }
+	// if err := godotenv.Load(); err != nil {
+	// 	return nil, errors.NewAppError(
+	// 		errors.ErrorCodeInternalError,
+	// 		"Failed to load .env file",
+	// 		err,
+	// 	)
+	// }
 
 	config := &Config{
 		Server: ServerConfig{
