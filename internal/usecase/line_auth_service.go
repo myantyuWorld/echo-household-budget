@@ -76,8 +76,8 @@ func (l *lineAuthService) Callback(c echo.Context, code string) error {
 }
 
 func (l *lineAuthService) CheckAuth(c echo.Context) (*domainmodel.UserAccount, error) {
-	cookie, err := c.Cookie("session")
-	if err != nil {
+	cookie, _ := c.Cookie("session")
+	if cookie == nil {
 		return nil, errors.New("not logged in")
 	}
 	userID, err := l.sessionManager.GetSession(cookie.Value)
