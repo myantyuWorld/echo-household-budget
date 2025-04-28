@@ -3,10 +3,8 @@ package config
 import (
 	"echo-household-budget/internal/shared/errors"
 	"fmt"
-	"log"
 	"os"
 
-	"github.com/joho/godotenv"
 	"golang.org/x/oauth2"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -54,6 +52,13 @@ type NotionConfig struct {
 // Load は環境変数から設定を読み込む
 func Load() (*Config, error) {
 	// .envファイルの読み込み
+	// if err := godotenv.Load(); err != nil {
+	// 	return nil, errors.NewAppError(
+	// 		errors.ErrorCodeInternalError,
+	// 		"Failed to load .env file",
+	// 		err,
+	// 	)
+	// }
 	// if err := godotenv.Load(); err != nil {
 	// 	return nil, errors.NewAppError(
 	// 		errors.ErrorCodeInternalError,
@@ -141,9 +146,9 @@ type AppConfig struct {
 
 func LoadConfig() *AppConfig {
 	// HACK : 本番デプロイ時には、コメントアウトすること
-	if err := godotenv.Load(); err != nil {
-		log.Printf("Warning: .env file not found")
-	}
+	// if err := godotenv.Load(); err != nil {
+	// 	log.Printf("Warning: .env file not found")
+	// }
 
 	// LINE OAuth2設定
 	lineConfig := &oauth2.Config{
