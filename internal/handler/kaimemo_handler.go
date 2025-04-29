@@ -54,6 +54,9 @@ func (k *kaimemoHandler) WebsocketTelegraph(c echo.Context) error {
 	}
 
 	res, err := k.shoppingUsecase.FetchShopping(domainmodel.HouseHoldID(uint(tempUserIDUint)))
+	fmt.Println("res, err := k.shoppingUsecase.FetchShopping(domainmodel.HouseHoldID(uint(tempUserIDUint)))")
+	spew.Dump(res)
+
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]string{
 			"error": "Failed to fetch kaimemo",
@@ -144,10 +147,6 @@ func (k *kaimemoHandler) CreateKaimemoAmount(c echo.Context) error {
 
 // FetchKaimemoSummaryRecord implements KaimemoHandler.
 func (k *kaimemoHandler) FetchKaimemoSummaryRecord(c echo.Context) error {
-	fmt.Println("===============")
-	fmt.Println("context から取得したuserAccount情報")
-	fmt.Println("===============")
-	spew.Dump(c.Request().Context())
 	ctx := c.Request().Context()
 	user, ok := ctx.Value(middleware.UserKey).(*domainmodel.UserAccount)
 	if !ok {
@@ -155,9 +154,6 @@ func (k *kaimemoHandler) FetchKaimemoSummaryRecord(c echo.Context) error {
 			"error": "Failed to get user",
 		})
 	}
-	fmt.Println("===============")
-	fmt.Println("context から取得したuserAccount情報")
-	fmt.Println("===============")
 	spew.Dump(user)
 
 	tempUserID := c.QueryParam("tempUserID")

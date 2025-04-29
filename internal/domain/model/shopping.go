@@ -12,6 +12,7 @@ type ShoppingMemo struct {
 	Title       string      `json:"title"`
 	Memo        string      `json:"memo"`
 	IsCompleted IsCompleted `json:"isCompleted"`
+	Category    Category    `json:"category"`
 }
 
 type ShoppingAmount struct {

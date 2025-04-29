@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/labstack/echo/v4"
 )
 
@@ -51,9 +50,6 @@ func (a *lineAuthHandler) Callback(c echo.Context) error {
 func (a *lineAuthHandler) FetchMe(c echo.Context) error {
 	userInfo, err := a.lineAuthService.CheckAuth(c)
 	if err != nil {
-		fmt.Println("CheckAuth Failed: %v", err)
-		spew.Dump(err)
-
 		return c.JSON(http.StatusUnauthorized, fmt.Errorf("CheckAuth Failed: %v", err))
 	}
 

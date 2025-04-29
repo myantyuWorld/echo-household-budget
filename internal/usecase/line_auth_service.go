@@ -8,7 +8,6 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/labstack/echo/v4"
 )
 
@@ -48,7 +47,6 @@ func (l *lineAuthService) Callback(c echo.Context, code string) error {
 	if err != nil {
 		return fmt.Errorf("failed to get user info: %w", err)
 	}
-	spew.Dump(userInfo)
 	lineUserInfo := domainmodel.NewLINEUserInfo(domainmodel.LINEUserID(userInfo.UserID), userInfo.DisplayName, userInfo.PictureURL)
 	result, err := l.userAccountService.IsDuplicateUserAccount(lineUserInfo.UserID)
 	if err != nil {
@@ -66,7 +64,6 @@ func (l *lineAuthService) Callback(c echo.Context, code string) error {
 	if err != nil {
 		return errors.New("failed to create session")
 	}
-	spew.Dump(sessionID)
 
 	if err := l.cookieManager.SetSessionCookie(c, sessionID); err != nil {
 		return errors.New("failed to set session cookie")

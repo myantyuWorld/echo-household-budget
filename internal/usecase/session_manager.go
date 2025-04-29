@@ -5,8 +5,6 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-
-	"github.com/davecgh/go-spew/spew"
 )
 
 // セッション管理
@@ -30,16 +28,10 @@ func (s *sessionManager) CreateSession(userID string) (string, error) {
 	sessionID := fmt.Sprintf("session-%s", generateSessionID())
 	s.sessionStore[sessionID] = userID
 
-	spew.Dump(s.sessionStore)
-
 	return sessionID, nil
 }
 
 func (s *sessionManager) GetSession(sessionID string) (string, error) {
-	fmt.Println("===============")
-	fmt.Println("func (s *sessionManager) GetSession(sessionID string) (string, error) {")
-	fmt.Println("===============")
-	spew.Dump(s.sessionStore)
 	userID, exists := s.sessionStore[sessionID]
 	if !exists {
 		return "", errors.New("SessionManager GetSession Session invalid")
