@@ -589,6 +589,8 @@ components:
           type: string
         isCompleted:
           type: boolean
+        category:
+          $ref: '#/components/schemas/Category'
     ShoppingRecord:
       type: object
       properties:

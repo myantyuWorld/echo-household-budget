@@ -65,7 +65,8 @@ func (s *shoppingRepository) DeleteShoppingMemo(id domainmodel.ShoppingID) error
 // FetchShoppingMemoItem implements domainmodel.ShoppingRepository.
 func (s *shoppingRepository) FetchShoppingMemoItem(householdID domainmodel.HouseHoldID) ([]*domainmodel.ShoppingMemo, error) {
 	model := []models.ShoppingMemo{}
-	if err := s.db.Where("household_book_id = ?", householdID).Find(&model).Error; err != nil {
+	// TODO : カテゴリ名も取得する
+	if err := s.db.Debug().Where("household_book_id = ?", householdID).Preload("Category").Find(&model).Error; err != nil {
 		return nil, err
 	}
 
@@ -78,6 +79,10 @@ func (s *shoppingRepository) FetchShoppingMemoItem(householdID domainmodel.House
 			Title:       v.Title,
 			Memo:        v.Memo,
 			IsCompleted: domainmodel.IsCompleted(v.IsCompleted),
+			Category: domainmodel.Category{
+				ID:   domainmodel.CategoryID(v.Category.ID),
+				Name: v.Category.Name,
+			},
 		})
 	}
 	return shoppingMemo, nil
