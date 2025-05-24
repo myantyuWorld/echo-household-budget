@@ -40,6 +40,8 @@ func (s *shoppingRepository) FetchShoppingAmountItemByHouseholdID(householdID do
 	startDateMonth := time.Date(dateTime.Year(), dateTime.Month(), 1, 0, 0, 0, 0, dateTime.Location())
 	endDateMonth := startDateMonth.AddDate(0, 1, 0)
 
+	// TODO
+	// カテゴリについて、家計簿ごとに、上限金額を設定できるようにした上で、上限金額を取得するようにする
 	model := []*models.ShoppingAmount{}
 	if err := s.db.Debug().Where("household_book_id = ? AND date BETWEEN ? AND ?", householdID, startDateMonth, endDateMonth).Preload("Category").Find(&model).Error; err != nil {
 		return nil, err

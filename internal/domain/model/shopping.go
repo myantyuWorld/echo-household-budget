@@ -85,7 +85,9 @@ func ConvertShoppingAmountsToShoppingAmount(shoppingAmount *models.ShoppingAmoun
 		Amount:      shoppingAmount.Amount,
 		Date:        shoppingAmount.Date.Format("2006-01-02"),
 		Memo:        shoppingAmount.Memo,
-		Category:    Category{ID: CategoryID(shoppingAmount.CategoryID), Name: shoppingAmount.Category.Name, Color: shoppingAmount.Category.Color},
+		// TODO : カテゴリについて、家計簿ごとに、上限金額を設定できるようにした上で、上限金額を取得するようにする
+		// HouseHoldCategory、のようなモデルが必要か
+		Category: Category{ID: CategoryID(shoppingAmount.CategoryID), Name: shoppingAmount.Category.Name, Color: shoppingAmount.Category.Color},
 	}
 }
 

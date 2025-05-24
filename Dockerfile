@@ -4,6 +4,6 @@ WORKDIR /go/src/app
 RUN go install github.com/rubenv/sql-migrate/...@latest
 COPY ./ ./
 RUN go mod download
-WORKDIR /go/src/app//cmd
+WORKDIR /go/src/app/cmd
 EXPOSE 3000
 CMD ["go", "run", "main.go"]

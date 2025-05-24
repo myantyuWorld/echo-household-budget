@@ -611,6 +611,8 @@ components:
           $ref: '#/components/schemas/Category'
         amount:
           type: integer
+        limitAmount:
+          type: integer
     SummarizeShoppingAmount:
       type: object
       properties:

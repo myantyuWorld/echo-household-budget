@@ -89,7 +89,6 @@ func (h *houseHoldHandler) CreateShoppingRecord(c echo.Context) error {
 
 // FetchShoppingRecord implements HouseHoldHandler.
 func (h *houseHoldHandler) FetchShoppingRecord(c echo.Context) error {
-	// TODO : 月を指定できるようにする
 	householdID := c.Param("householdID")
 	householdIDUint, err := strconv.ParseUint(householdID, 10, 32)
 	if err != nil {
@@ -106,10 +105,6 @@ func (h *houseHoldHandler) FetchShoppingRecord(c echo.Context) error {
 		Date:        date,
 	}
 
-	// TODO : 指定されていない場合は、今月のデータを取得する
-	// TODO : 指定されている場合は、指定された月のデータを取得する
-	// TODO : カテゴリ全ての、支出を計算して返す
-	// TODO : カテゴリごとの支出を計算して返す
 	results, err := h.service.SummarizeShoppingAmount(input)
 	if err != nil {
 		log.Println(err)
