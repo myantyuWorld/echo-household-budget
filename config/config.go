@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/joho/godotenv"
 	"golang.org/x/oauth2"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -17,6 +18,7 @@ type Config struct {
 	Database DatabaseConfig `validate:"required"`
 	LINE     LINEConfig     `validate:"required"`
 	Notion   NotionConfig   `validate:"required"`
+	S3       S3Config       `validate:"required"`
 }
 
 // ServerConfig はサーバー関連の設定
@@ -49,23 +51,23 @@ type NotionConfig struct {
 	KaimemoDatabaseSummaryID string `validate:"required"`
 }
 
+type S3Config struct {
+	BucketName      string `validate:"required"`
+	Region          string `validate:"required"`
+	AccessKeyID     string `validate:"required"`
+	SecretAccessKey string `validate:"required"`
+}
+
 // Load は環境変数から設定を読み込む
 func Load() (*Config, error) {
 	// .envファイルの読み込み
-	// if err := godotenv.Load(); err != nil {
-	// 	return nil, errors.NewAppError(
-	// 		errors.ErrorCodeInternalError,
-	// 		"Failed to load .env file",
-	// 		err,
-	// 	)
-	// }
-	// if err := godotenv.Load(); err != nil {
-	// 	return nil, errors.NewAppError(
-	// 		errors.ErrorCodeInternalError,
-	// 		"Failed to load .env file",
-	// 		err,
-	// 	)
-	// }
+	if err := godotenv.Load(); err != nil {
+		return nil, errors.NewAppError(
+			errors.ErrorCodeInternalError,
+			"Failed to load .env file",
+			err,
+		)
+	}
 
 	config := &Config{
 		Server: ServerConfig{
@@ -142,6 +144,7 @@ type AppConfig struct {
 	LINEConfig                           *oauth2.Config
 	LINELoginFrontendCallbackURL         string
 	DatabaseConfig                       *DatabaseConfig
+	S3Config                             *S3Config
 }
 
 func LoadConfig() *AppConfig {
@@ -172,6 +175,13 @@ func LoadConfig() *AppConfig {
 		SSLMode:  getEnvWithDefault("DB_SSLMODE", "disable"),
 	}
 
+	// S3設定
+	s3Config := &S3Config{
+		BucketName:      getEnvWithDefault("S3_BUCKET_NAME", ""),
+		Region:          getEnvWithDefault("S3_REGION", ""),
+		AccessKeyID:     getEnvWithDefault("S3_ACCESS_KEY_ID", ""),
+		SecretAccessKey: getEnvWithDefault("S3_SECRET_ACCESS_KEY", ""),
+	}
 	return &AppConfig{
 		Port:                                 getEnvWithDefault("PORT", "3000"),
 		NotionAPIKey:                         getEnvWithDefault("NOTION_API_KEY", ""),
@@ -181,6 +191,7 @@ func LoadConfig() *AppConfig {
 		LINEConfig:                           lineConfig,
 		LINELoginFrontendCallbackURL:         os.Getenv("LINE_LOGIN_FRONTEND_CALLBACK_URL"),
 		DatabaseConfig:                       dbConfig,
+		S3Config:                             s3Config,
 	}
 }
 

@@ -36,6 +36,12 @@ func main() {
 	}
 	defer sqlDB.Close()
 
+	// S3接続の設定
+	s3, err := config.NewS3Connection(appConfig.S3Config)
+	if err != nil {
+		e.Logger.Fatal(err)
+	}
+
 	// ミドルウェアの設定
 	e.Use(echomiddleware.Logger())
 	e.Use(echomiddleware.Recover())
@@ -57,21 +63,23 @@ func main() {
 	categoryRepository := repository.NewCategoryRepository(db)
 	houseHoldRepository := repository.NewHouseHoldRepository(db)
 	shoppingRepository := repository.NewShoppingRepository(db)
+	receiptAnalyzeRepository := repository.NewReceiptAnalyzeRepository(db)
+	fileStorageRepository := repository.NewFileStorageRepository(s3)
 
 	userAccountService := domainService.NewUserAccountService(userAccountRepository, categoryRepository, houseHoldRepository)
 	houseHoldService := domainService.NewHouseHoldService(houseHoldRepository, shoppingRepository, categoryRepository)
-
 	// サービスの初期化
 	sessionManager := usecase.NewSessionManager()
 	kaimemoService := usecase.NewKaimemoService(kaimemoRepository)
 	shoppingUsecase := usecase.NewShoppingUsecase(shoppingRepository)
 	lineAuthService := usecase.NewLineAuthService(lineRepository, userAccountRepository, userAccountService, sessionManager)
+	receiptAnalyzeUsecase := usecase.NewReceiptAnalyzeUsecase(receiptAnalyzeRepository, fileStorageRepository)
 
 	// ハンドラーの初期化
 	kaimemoHandler := handler.NewKaimemoHandler(kaimemoService, shoppingUsecase)
 	lineAuthHandler := handler.NewLineAuthHandler(lineAuthService, appConfig)
 	houseHoldHandler := handler.NewHouseHoldHandler(houseHoldService, userAccountService)
-
+	receiptAnalyzeHandler := handler.NewReceiptAnalyzeHandler(receiptAnalyzeUsecase)
 	e.GET("/health", func(c echo.Context) error {
 		return c.JSON(http.StatusOK, map[string]string{
 			"status": "ok",
