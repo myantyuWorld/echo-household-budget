@@ -1,7 +1,9 @@
+//go:generate mockgen -source=$GOFILE -destination=../mock/$GOPACKAGE/mock_$GOFILE -package=mock
 package usecase
 
 import (
 	domainmodel "echo-household-budget/internal/domain/model"
+	"echo-household-budget/internal/domain/repository"
 	"encoding/base64"
 	"fmt"
 	"time"
@@ -11,7 +13,7 @@ import (
 
 type receiptAnalyzeUsecase struct {
 	repo        domainmodel.ReceiptAnalyzeRepository
-	fileStorage domainmodel.FileStorageRepository
+	fileStorage repository.FileStorageRepository
 }
 
 // CreateReceiptAnalyzeReception implements ReceiptAnalyzeUsecase.

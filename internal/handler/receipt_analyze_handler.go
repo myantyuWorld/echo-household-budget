@@ -1,3 +1,4 @@
+//go:generate mockgen -source=$GOFILE -destination=../mock/$GOPACKAGE/mock_$GOFILE -package=mock
 package handler
 
 import (
@@ -26,12 +27,30 @@ func (r *receiptAnalyzeHandler) CreateReceiptAnalyzeReception(c echo.Context) er
 		})
 	}
 
+	if req.HouseholdID == 0 {
+		return c.JSON(http.StatusBadRequest, map[string]string{
+			"error": "household_id is required",
+		})
+	}
+
+	if req.ImageData == "" {
+		return c.JSON(http.StatusBadRequest, map[string]string{
+			"error": "image_data is required",
+		})
+	}
+
 	receipt := &domainmodel.ReceiptAnalyzeReception{
 		HouseholdBookID: req.HouseholdID,
 		ImageData:       req.ImageData,
 	}
 
-	return r.usecase.CreateReceiptAnalyzeReception(receipt)
+	if err := r.usecase.CreateReceiptAnalyzeReception(receipt); err != nil {
+		return c.JSON(http.StatusInternalServerError, map[string]string{
+			"error": err.Error(),
+		})
+	}
+
+	return c.NoContent(http.StatusOK)
 }
 
 // CreateReceiptAnalyzeResult implements ReceiptAnalyzeHandler.
