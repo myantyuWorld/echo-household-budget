@@ -50,6 +50,6 @@ type ReceiptAnalyzeUsecase interface {
 	FindByID(id domainmodel.HouseHoldID) (*domainmodel.ReceiptAnalyze, error)
 }
 
-func NewReceiptAnalyzeUsecase(repo domainmodel.ReceiptAnalyzeRepository) ReceiptAnalyzeUsecase {
-	return &receiptAnalyzeUsecase{repo: repo}
+func NewReceiptAnalyzeUsecase(repo domainmodel.ReceiptAnalyzeRepository, fileStorage repository.FileStorageRepository) ReceiptAnalyzeUsecase {
+	return &receiptAnalyzeUsecase{repo: repo, fileStorage: fileStorage}
 }

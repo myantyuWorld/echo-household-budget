@@ -3,6 +3,7 @@ package config
 import (
 	"echo-household-budget/internal/shared/errors"
 	"fmt"
+	"log"
 	"os"
 
 	"github.com/joho/godotenv"
@@ -58,57 +59,6 @@ type S3Config struct {
 	SecretAccessKey string `validate:"required"`
 }
 
-// Load は環境変数から設定を読み込む
-func Load() (*Config, error) {
-	// .envファイルの読み込み
-	if err := godotenv.Load(); err != nil {
-		return nil, errors.NewAppError(
-			errors.ErrorCodeInternalError,
-			"Failed to load .env file",
-			err,
-		)
-	}
-
-	config := &Config{
-		Server: ServerConfig{
-			Port:         getEnvOrDefault("PORT", "3000"),
-			AllowOrigins: []string{getEnvOrDefault("ALLOW_ORIGINS", "*")},
-		},
-		Database: DatabaseConfig{
-			Host:     getEnvOrDefault("DB_HOST", "localhost"),
-			Port:     getEnvOrDefault("DB_PORT", "5432"),
-			User:     getEnvOrDefault("DB_USER", "postgres"),
-			Password: getEnvOrDefault("DB_PASSWORD", "postgres"),
-			DBName:   getEnvOrDefault("DB_NAME", "kakeibo"),
-		},
-		LINE: LINEConfig{
-			ChannelID:     getEnvOrDefault("LINE_CHANNEL_ID", ""),
-			ChannelSecret: getEnvOrDefault("LINE_CHANNEL_SECRET", ""),
-			RedirectURI:   getEnvOrDefault("LINE_REDIRECT_URI", ""),
-		},
-		Notion: NotionConfig{
-			APIKey:                   getEnvOrDefault("NOTION_API_KEY", ""),
-			KaimemoDatabaseInputID:   getEnvOrDefault("NOTION_KAIMEMO_DB_INPUT_ID", ""),
-			KaimemoDatabaseSummaryID: getEnvOrDefault("NOTION_KAIMEMO_DB_SUMMARY_ID", ""),
-		},
-	}
-
-	// 必須環境変数のチェック
-	if err := validateRequiredEnvVars(config); err != nil {
-		return nil, err
-	}
-
-	return config, nil
-}
-
-// getEnvOrDefault は環境変数を取得し、存在しない場合はデフォルト値を返す
-func getEnvOrDefault(key, defaultValue string) string {
-	if value := os.Getenv(key); value != "" {
-		return value
-	}
-	return defaultValue
-}
-
 // validateRequiredEnvVars は必須環境変数の存在をチェックする
 func validateRequiredEnvVars(config *Config) error {
 	if config.LINE.ChannelID == "" {
@@ -149,9 +99,9 @@ type AppConfig struct {
 
 func LoadConfig() *AppConfig {
 	// HACK : 本番デプロイ時には、コメントアウトすること
-	// if err := godotenv.Load(); err != nil {
-	// 	log.Printf("Warning: .env file not found")
-	// }
+	if err := godotenv.Load(); err != nil {
+		log.Printf("Warning: .env file not found")
+	}
 
 	// LINE OAuth2設定
 	lineConfig := &oauth2.Config{

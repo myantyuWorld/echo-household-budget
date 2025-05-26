@@ -2,6 +2,7 @@ package main
 
 import (
 	"echo-household-budget/config"
+	appConfig "echo-household-budget/config"
 	domainService "echo-household-budget/internal/domain/service"
 	"echo-household-budget/internal/handler"
 	"echo-household-budget/internal/infrastructure/middleware"
@@ -10,6 +11,12 @@ import (
 	"fmt"
 	"net/http"
 
+	"echo-household-budget/internal/infrastructure/storage/s3"
+
+	"context"
+
+	awsconfig "github.com/aws/aws-sdk-go-v2/config"
+	awss3 "github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/davecgh/go-spew/spew"
 	"github.com/labstack/echo/v4"
 	echomiddleware "github.com/labstack/echo/v4/middleware"
@@ -19,7 +26,7 @@ import (
 // export PATH=$PATH:$(go env GOPATH)/bin && air -c .air.toml でホットリロードを有効化
 func main() {
 	// 設定の読み込み
-	appConfig := config.LoadConfig()
+	appConfig := appConfig.LoadConfig()
 	spew.Dump(appConfig)
 
 	// Echoインスタンスの作成
@@ -35,12 +42,6 @@ func main() {
 		e.Logger.Fatal(err)
 	}
 	defer sqlDB.Close()
-
-	// S3接続の設定
-	s3, err := config.NewS3Connection(appConfig.S3Config)
-	if err != nil {
-		e.Logger.Fatal(err)
-	}
 
 	// ミドルウェアの設定
 	e.Use(echomiddleware.Logger())
@@ -63,8 +64,13 @@ func main() {
 	categoryRepository := repository.NewCategoryRepository(db)
 	houseHoldRepository := repository.NewHouseHoldRepository(db)
 	shoppingRepository := repository.NewShoppingRepository(db)
-	receiptAnalyzeRepository := repository.NewReceiptAnalyzeRepository(db)
-	fileStorageRepository := repository.NewFileStorageRepository(s3)
+	receiptAnalyzeRepository := repository.NewReceiptRepository(db)
+	cfg, err := awsconfig.LoadDefaultConfig(context.Background())
+	if err != nil {
+		e.Logger.Fatal(err)
+	}
+	s3Client := awss3.NewFromConfig(cfg)
+	fileStorageRepository := s3.NewS3FileStorage(s3Client, appConfig.S3Config.BucketName)
 
 	userAccountService := domainService.NewUserAccountService(userAccountRepository, categoryRepository, houseHoldRepository)
 	houseHoldService := domainService.NewHouseHoldService(houseHoldRepository, shoppingRepository, categoryRepository)
@@ -114,6 +120,10 @@ func main() {
 	lineAuth.POST("/logout", lineAuthHandler.Logout)
 	// lineAuth.GET("/me", lineAuthHandler.FetchMe, middleware.AuthMiddleware(sessionManager, userAccountRepository))
 	lineAuth.GET("/me", lineAuthHandler.FetchMe)
+
+	openAI := e.Group("/openai/analyze")
+	openAI.POST("/:householdID/receipt/reception", receiptAnalyzeHandler.CreateReceiptAnalyzeReception)
+	openAI.POST("/:householdID/receipt/result", receiptAnalyzeHandler.CreateReceiptAnalyzeResult)
 
 	// サーバーの起動
 	e.Logger.Fatal(e.Start(fmt.Sprintf(":%s", appConfig.Port)))
