@@ -2,6 +2,7 @@ package main
 
 import (
 	"echo-household-budget/config"
+	appConfig "echo-household-budget/config"
 	domainService "echo-household-budget/internal/domain/service"
 	"echo-household-budget/internal/handler"
 	"echo-household-budget/internal/infrastructure/middleware"
@@ -10,7 +11,14 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/davecgh/go-spew/spew"
+	"echo-household-budget/internal/infrastructure/storage/s3"
+
+	"context"
+
+	"github.com/aws/aws-sdk-go-v2/aws"
+	awsconfig "github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/credentials"
+	awss3 "github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/labstack/echo/v4"
 	echomiddleware "github.com/labstack/echo/v4/middleware"
 )
@@ -19,8 +27,8 @@ import (
 // export PATH=$PATH:$(go env GOPATH)/bin && air -c .air.toml でホットリロードを有効化
 func main() {
 	// 設定の読み込み
-	appConfig := config.LoadConfig()
-	spew.Dump(appConfig)
+	appConfig := appConfig.LoadConfig()
+	// spew.Dump(appConfig)
 
 	// Echoインスタンスの作成
 	e := echo.New()
@@ -57,21 +65,35 @@ func main() {
 	categoryRepository := repository.NewCategoryRepository(db)
 	houseHoldRepository := repository.NewHouseHoldRepository(db)
 	shoppingRepository := repository.NewShoppingRepository(db)
+	receiptAnalyzeRepository := repository.NewReceiptRepository(db)
+	cfg, err := awsconfig.LoadDefaultConfig(context.Background(),
+		awsconfig.WithRegion(appConfig.S3Config.Region),
+		awsconfig.WithCredentialsProvider(aws.NewCredentialsCache(credentials.NewStaticCredentialsProvider(
+			appConfig.S3Config.AccessKeyID,
+			appConfig.S3Config.SecretAccessKey,
+			"",
+		))),
+	)
+	if err != nil {
+		e.Logger.Fatal(err)
+	}
+	s3Client := awss3.NewFromConfig(cfg)
+	fileStorageRepository := s3.NewS3FileStorage(s3Client, appConfig.S3Config.BucketName)
 
 	userAccountService := domainService.NewUserAccountService(userAccountRepository, categoryRepository, houseHoldRepository)
 	houseHoldService := domainService.NewHouseHoldService(houseHoldRepository, shoppingRepository, categoryRepository)
-
 	// サービスの初期化
 	sessionManager := usecase.NewSessionManager()
 	kaimemoService := usecase.NewKaimemoService(kaimemoRepository)
 	shoppingUsecase := usecase.NewShoppingUsecase(shoppingRepository)
 	lineAuthService := usecase.NewLineAuthService(lineRepository, userAccountRepository, userAccountService, sessionManager)
+	receiptAnalyzeUsecase := usecase.NewReceiptAnalyzeUsecase(receiptAnalyzeRepository, fileStorageRepository)
 
 	// ハンドラーの初期化
 	kaimemoHandler := handler.NewKaimemoHandler(kaimemoService, shoppingUsecase)
 	lineAuthHandler := handler.NewLineAuthHandler(lineAuthService, appConfig)
 	houseHoldHandler := handler.NewHouseHoldHandler(houseHoldService, userAccountService)
-
+	receiptAnalyzeHandler := handler.NewReceiptAnalyzeHandler(receiptAnalyzeUsecase)
 	e.GET("/health", func(c echo.Context) error {
 		return c.JSON(http.StatusOK, map[string]string{
 			"status": "ok",
@@ -106,6 +128,10 @@ func main() {
 	lineAuth.POST("/logout", lineAuthHandler.Logout)
 	// lineAuth.GET("/me", lineAuthHandler.FetchMe, middleware.AuthMiddleware(sessionManager, userAccountRepository))
 	lineAuth.GET("/me", lineAuthHandler.FetchMe)
+
+	openAI := e.Group("/openai/analyze")
+	openAI.POST("/:householdID/receipt/reception", receiptAnalyzeHandler.CreateReceiptAnalyzeReception)
+	openAI.POST("/:householdID/receipt/result", receiptAnalyzeHandler.CreateReceiptAnalyzeResult)
 
 	// サーバーの起動
 	e.Logger.Fatal(e.Start(fmt.Sprintf(":%s", appConfig.Port)))

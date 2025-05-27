@@ -3,8 +3,10 @@ package config
 import (
 	"echo-household-budget/internal/shared/errors"
 	"fmt"
+	"log"
 	"os"
 
+	"github.com/joho/godotenv"
 	"golang.org/x/oauth2"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -17,6 +19,7 @@ type Config struct {
 	Database DatabaseConfig `validate:"required"`
 	LINE     LINEConfig     `validate:"required"`
 	Notion   NotionConfig   `validate:"required"`
+	S3       S3Config       `validate:"required"`
 }
 
 // ServerConfig はサーバー関連の設定
@@ -49,62 +52,11 @@ type NotionConfig struct {
 	KaimemoDatabaseSummaryID string `validate:"required"`
 }
 
-// Load は環境変数から設定を読み込む
-func Load() (*Config, error) {
-	// .envファイルの読み込み
-	// if err := godotenv.Load(); err != nil {
-	// 	return nil, errors.NewAppError(
-	// 		errors.ErrorCodeInternalError,
-	// 		"Failed to load .env file",
-	// 		err,
-	// 	)
-	// }
-	// if err := godotenv.Load(); err != nil {
-	// 	return nil, errors.NewAppError(
-	// 		errors.ErrorCodeInternalError,
-	// 		"Failed to load .env file",
-	// 		err,
-	// 	)
-	// }
-
-	config := &Config{
-		Server: ServerConfig{
-			Port:         getEnvOrDefault("PORT", "3000"),
-			AllowOrigins: []string{getEnvOrDefault("ALLOW_ORIGINS", "*")},
-		},
-		Database: DatabaseConfig{
-			Host:     getEnvOrDefault("DB_HOST", "localhost"),
-			Port:     getEnvOrDefault("DB_PORT", "5432"),
-			User:     getEnvOrDefault("DB_USER", "postgres"),
-			Password: getEnvOrDefault("DB_PASSWORD", "postgres"),
-			DBName:   getEnvOrDefault("DB_NAME", "kakeibo"),
-		},
-		LINE: LINEConfig{
-			ChannelID:     getEnvOrDefault("LINE_CHANNEL_ID", ""),
-			ChannelSecret: getEnvOrDefault("LINE_CHANNEL_SECRET", ""),
-			RedirectURI:   getEnvOrDefault("LINE_REDIRECT_URI", ""),
-		},
-		Notion: NotionConfig{
-			APIKey:                   getEnvOrDefault("NOTION_API_KEY", ""),
-			KaimemoDatabaseInputID:   getEnvOrDefault("NOTION_KAIMEMO_DB_INPUT_ID", ""),
-			KaimemoDatabaseSummaryID: getEnvOrDefault("NOTION_KAIMEMO_DB_SUMMARY_ID", ""),
-		},
-	}
-
-	// 必須環境変数のチェック
-	if err := validateRequiredEnvVars(config); err != nil {
-		return nil, err
-	}
-
-	return config, nil
-}
-
-// getEnvOrDefault は環境変数を取得し、存在しない場合はデフォルト値を返す
-func getEnvOrDefault(key, defaultValue string) string {
-	if value := os.Getenv(key); value != "" {
-		return value
-	}
-	return defaultValue
+type S3Config struct {
+	BucketName      string `validate:"required"`
+	Region          string `validate:"required"`
+	AccessKeyID     string `validate:"required"`
+	SecretAccessKey string `validate:"required"`
 }
 
 // validateRequiredEnvVars は必須環境変数の存在をチェックする
@@ -142,13 +94,14 @@ type AppConfig struct {
 	LINEConfig                           *oauth2.Config
 	LINELoginFrontendCallbackURL         string
 	DatabaseConfig                       *DatabaseConfig
+	S3Config                             *S3Config
 }
 
 func LoadConfig() *AppConfig {
 	// HACK : 本番デプロイ時には、コメントアウトすること
-	// if err := godotenv.Load(); err != nil {
-	// 	log.Printf("Warning: .env file not found")
-	// }
+	if err := godotenv.Load(); err != nil {
+		log.Printf("Warning: .env file not found")
+	}
 
 	// LINE OAuth2設定
 	lineConfig := &oauth2.Config{
@@ -172,6 +125,13 @@ func LoadConfig() *AppConfig {
 		SSLMode:  getEnvWithDefault("DB_SSLMODE", "disable"),
 	}
 
+	// S3設定
+	s3Config := &S3Config{
+		BucketName:      getEnvWithDefault("S3_BUCKET_NAME", ""),
+		Region:          getEnvWithDefault("S3_REGION", ""),
+		AccessKeyID:     getEnvWithDefault("S3_ACCESS_KEY_ID", ""),
+		SecretAccessKey: getEnvWithDefault("S3_SECRET_ACCESS_KEY", ""),
+	}
 	return &AppConfig{
 		Port:                                 getEnvWithDefault("PORT", "3000"),
 		NotionAPIKey:                         getEnvWithDefault("NOTION_API_KEY", ""),
@@ -181,6 +141,7 @@ func LoadConfig() *AppConfig {
 		LINEConfig:                           lineConfig,
 		LINELoginFrontendCallbackURL:         os.Getenv("LINE_LOGIN_FRONTEND_CALLBACK_URL"),
 		DatabaseConfig:                       dbConfig,
+		S3Config:                             s3Config,
 	}
 }
 

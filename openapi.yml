@@ -403,6 +403,35 @@ paths:
           $ref: '#/components/responses/NotFoundError'
         default:
           $ref: '#/components/responses/GeneralError'
+  /openai/analyze/{householdID}/receipt/reception:
+    post:
+      tags:
+        - OpenAI
+      summary: レシート分析受付
+      description: レシート分析を受け付ける
+      parameters:
+        - name: householdID
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              properties:
+                imageData:
+                  type: string
+      responses:
+        200:
+          description: OK
+        401:
+          $ref: '#/components/responses/UnauthorizedError'
+        404:
+          $ref: '#/components/responses/NotFoundError'
+        default:
+          $ref: '#/components/responses/GeneralError'
 components:
   responses:
     GetShoppingRecord:
