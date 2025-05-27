@@ -1,12 +1,10 @@
 package domainmodel
 
 type ReceiptAnalyze struct {
-	ID              int
-	ImageURL        string
-	AnalyzeStatus   string
-	TotalPrice      int
-	HouseholdBookID HouseHoldID
-	Items           []ReceiptAnalyzeItem
+	ID         uint
+	TotalPrice uint
+	S3FilePath string
+	Items      []ReceiptAnalyzeItem
 }
 
 type ReceiptAnalyzeReception struct {
@@ -17,11 +15,12 @@ type ReceiptAnalyzeReception struct {
 
 type ReceiptAnalyzeItem struct {
 	Name  string
-	Price int
+	Price uint
 }
 
 type ReceiptAnalyzeRepository interface {
 	CreateReceiptAnalyzeReception(receiptAnalyze *ReceiptAnalyzeReception) error
 	CreateReceiptAnalyzeResult(receiptAnalyze *ReceiptAnalyze) error
+	FindReceiptAnalyzeByS3FilePath(s3FilePath string) (*ReceiptAnalyze, error)
 	FindByID(id HouseHoldID) (*ReceiptAnalyze, error)
 }
