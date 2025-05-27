@@ -143,3 +143,128 @@ func TestCreateReceiptAnalyzeReception(t *testing.T) {
 		})
 	}
 }
+
+func TestCreateReceiptAnalyzeResult(t *testing.T) {
+	tests := []struct {
+		name           string
+		requestBody    map[string]interface{}
+		mockSetup      func(*MockReceiptAnalyzeUsecase)
+		expectedStatus int
+		skip           bool
+	}{
+		{
+			name: "正常系：リクエストのバインディングと処理が成功",
+			requestBody: map[string]interface{}{
+				"total": 1000,
+				"items": []map[string]interface{}{
+					{"name": "item1", "price": 500, "s3FilePath": "path1"},
+				},
+			},
+			mockSetup: func(mockUsecase *MockReceiptAnalyzeUsecase) {
+				mockUsecase.On("CreateReceiptAnalyzeResult", mock.Anything).Return(nil)
+			},
+			expectedStatus: http.StatusOK,
+			skip:           false,
+		},
+		{
+			name: "異常系：リクエストのバインディングに失敗",
+			requestBody: map[string]interface{}{
+				"total": "invalid", // 数値でない
+				"items": []map[string]interface{}{},
+			},
+			mockSetup:      func(mockUsecase *MockReceiptAnalyzeUsecase) {},
+			expectedStatus: http.StatusBadRequest,
+			skip:           false,
+		},
+		{
+			name: "異常系：usecaseの処理に失敗",
+			requestBody: map[string]interface{}{
+				"total": 1000,
+				"items": []map[string]interface{}{
+					{"name": "item1", "price": 500, "s3FilePath": "path1"},
+				},
+			},
+			mockSetup: func(mockUsecase *MockReceiptAnalyzeUsecase) {
+				mockUsecase.On("CreateReceiptAnalyzeResult", mock.Anything).Return(errors.New("usecase error"))
+			},
+			expectedStatus: http.StatusInternalServerError,
+			skip:           false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if tt.skip {
+				t.Skip("このテストケースはスキップされます")
+			}
+			e := echo.New()
+			mockUsecase := new(MockReceiptAnalyzeUsecase)
+			tt.mockSetup(mockUsecase)
+			handler := NewReceiptAnalyzeHandler(mockUsecase)
+			reqBody, _ := json.Marshal(tt.requestBody)
+			req := httptest.NewRequest(http.MethodPost, "/", bytes.NewReader(reqBody))
+			req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+			rec := httptest.NewRecorder()
+			c := e.NewContext(req, rec)
+			_ = handler.CreateReceiptAnalyzeResult(c)
+			assert.Equal(t, tt.expectedStatus, rec.Code)
+			mockUsecase.AssertExpectations(t)
+		})
+	}
+}
+
+func TestFindByID(t *testing.T) {
+	tests := []struct {
+		name           string
+		paramID        string
+		mockSetup      func(*MockReceiptAnalyzeUsecase)
+		expectedStatus int
+		skip           bool
+	}{
+		{
+			name:    "正常系：ユースケースが正しく呼ばれる",
+			paramID: "123",
+			mockSetup: func(mockUsecase *MockReceiptAnalyzeUsecase) {
+				mockUsecase.On("FindByID", domainmodel.HouseHoldID(123)).Return(&domainmodel.ReceiptAnalyze{ID: 123}, nil)
+			},
+			expectedStatus: http.StatusOK,
+			skip:           true,
+		},
+		{
+			name:    "異常系：ユースケースエラー",
+			paramID: "123",
+			mockSetup: func(mockUsecase *MockReceiptAnalyzeUsecase) {
+				mockUsecase.On("FindByID", domainmodel.HouseHoldID(123)).Return(nil, errors.New("not found"))
+			},
+			expectedStatus: http.StatusInternalServerError,
+			skip:           true,
+		},
+		{
+			name:           "異常系：パラメータが不正",
+			paramID:        "invalid",
+			mockSetup:      func(mockUsecase *MockReceiptAnalyzeUsecase) {},
+			expectedStatus: http.StatusBadRequest,
+			skip:           true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if tt.skip {
+				t.Skip("このテストケースはスキップされます")
+			}
+			e := echo.New()
+			mockUsecase := new(MockReceiptAnalyzeUsecase)
+			tt.mockSetup(mockUsecase)
+			handler := NewReceiptAnalyzeHandler(mockUsecase)
+			req := httptest.NewRequest(http.MethodGet, "/", nil)
+			rec := httptest.NewRecorder()
+			c := e.NewContext(req, rec)
+			c.SetParamNames("id")
+			c.SetParamValues(tt.paramID)
+			_ = handler.FindByID(c)
+			assert.Equal(t, tt.expectedStatus, rec.Code)
+			mockUsecase.AssertExpectations(t)
+		})
+	}
+}

@@ -48,22 +48,34 @@ func (r *ReceiptRepository) CreateReceiptAnalyzeReception(receiptAnalyze *domain
 
 // CreateReceiptAnalyzeResult implements domainmodel.ReceiptAnalyzeRepository.
 func (r *ReceiptRepository) CreateReceiptAnalyzeResult(receiptAnalyze *domainmodel.ReceiptAnalyze) error {
-
-	items := make([]models.ReceiptAnalyzeItems, len(receiptAnalyze.Items))
-	for i, item := range receiptAnalyze.Items {
-		items[i] = models.ReceiptAnalyzeItems{
-			Name:  item.Name,
-			Price: int(item.Price),
+	err := r.db.Transaction(func(tx *gorm.DB) error {
+		items := make([]models.ReceiptAnalyzeItems, len(receiptAnalyze.Items))
+		for i, item := range receiptAnalyze.Items {
+			items[i] = models.ReceiptAnalyzeItems{
+				ReceiptAnalyzeID: int(receiptAnalyze.ID),
+				Name:             item.Name,
+				Price:            int(item.Price),
+			}
 		}
-	}
 
-	model := models.ReceiptAnalyzes{
-		TotalPrice:    int(receiptAnalyze.TotalPrice),
-		AnalyzeStatus: "completed",
-		Items:         items,
-	}
+		if err := tx.Create(&items).Error; err != nil {
+			return err
+		}
 
-	return r.db.Model(&models.ReceiptAnalyzes{}).Where("id = ?", receiptAnalyze.ID).Updates(&model).Error
+		model := models.ReceiptAnalyzes{
+			TotalPrice:    int(receiptAnalyze.TotalPrice),
+			AnalyzeStatus: "finished",
+			Items:         items,
+		}
+
+		if err := tx.Model(&models.ReceiptAnalyzes{}).Where("id = ?", receiptAnalyze.ID).Updates(&model).Error; err != nil {
+			return err
+		}
+
+		return nil
+	})
+
+	return err
 }
 
 // FindByID implements domainmodel.ReceiptAnalyzeRepository.

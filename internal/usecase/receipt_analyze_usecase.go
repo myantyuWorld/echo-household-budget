@@ -49,7 +49,7 @@ func (r *receiptAnalyzeUsecase) CreateReceiptAnalyzeResult(receipt *domainmodel.
 
 // FindByID implements ReceiptAnalyzeUsecase.
 func (r *receiptAnalyzeUsecase) FindByID(id domainmodel.HouseHoldID) (*domainmodel.ReceiptAnalyze, error) {
-	panic("unimplemented")
+	return r.repo.FindByID(id)
 }
 
 type ReceiptAnalyzeUsecase interface {

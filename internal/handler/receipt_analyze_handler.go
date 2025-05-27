@@ -21,14 +21,14 @@ type CreateReceiptRequest struct {
 }
 
 type CreateReceiptAnalyzeResultRequest struct {
-	Total uint                 `json:"total"`
-	Items []ReceiptAnalyzeItem `json:"items"`
+	Total      uint                 `json:"total"`
+	S3FilePath string               `json:"s3FilePath"`
+	Items      []ReceiptAnalyzeItem `json:"items"`
 }
 
 type ReceiptAnalyzeItem struct {
-	Name       string `json:"name"`
-	Price      uint   `json:"price"`
-	S3FilePath string `json:"s3FilePath"`
+	Name  string `json:"name"`
+	Price uint   `json:"price"`
 }
 
 // CreateReceiptAnalyzeReception implements ReceiptAnalyzeHandler.
@@ -72,6 +72,8 @@ func (r *receiptAnalyzeHandler) CreateReceiptAnalyzeResult(c echo.Context) error
 		})
 	}
 
+	spew.Dump(req)
+
 	// TODO：ここ、わざわざハンドラーでやらない方がいい｜具体的には、ドメインモデルで、変換処理をしたらいい？
 	items := make([]domainmodel.ReceiptAnalyzeItem, len(req.Items))
 	for i, item := range req.Items {
@@ -83,7 +85,7 @@ func (r *receiptAnalyzeHandler) CreateReceiptAnalyzeResult(c echo.Context) error
 
 	result := &domainmodel.ReceiptAnalyze{
 		TotalPrice: req.Total,
-		S3FilePath: req.Items[0].S3FilePath,
+		S3FilePath: req.S3FilePath,
 		Items:      items,
 	}
 
