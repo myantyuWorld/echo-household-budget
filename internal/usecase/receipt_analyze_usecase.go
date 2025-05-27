@@ -36,12 +36,20 @@ func (r *receiptAnalyzeUsecase) CreateReceiptAnalyzeReception(receipt *domainmod
 
 // CreateReceiptAnalyzeResult implements ReceiptAnalyzeUsecase.
 func (r *receiptAnalyzeUsecase) CreateReceiptAnalyzeResult(receipt *domainmodel.ReceiptAnalyze) error {
-	return r.repo.CreateReceiptAnalyzeResult(receipt)
+	receiptAnalyze, err := r.repo.FindReceiptAnalyzeByS3FilePath(receipt.S3FilePath)
+	if err != nil {
+		return err
+	}
+
+	receiptAnalyze.TotalPrice = receipt.TotalPrice
+	receiptAnalyze.Items = receipt.Items
+
+	return r.repo.CreateReceiptAnalyzeResult(receiptAnalyze)
 }
 
 // FindByID implements ReceiptAnalyzeUsecase.
 func (r *receiptAnalyzeUsecase) FindByID(id domainmodel.HouseHoldID) (*domainmodel.ReceiptAnalyze, error) {
-	panic("unimplemented")
+	return r.repo.FindByID(id)
 }
 
 type ReceiptAnalyzeUsecase interface {

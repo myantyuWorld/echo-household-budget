@@ -33,6 +33,14 @@ func (m *MockReceiptAnalyzeRepository) FindByID(id domainmodel.HouseHoldID) (*do
 	return args.Get(0).(*domainmodel.ReceiptAnalyze), args.Error(1)
 }
 
+func (m *MockReceiptAnalyzeRepository) FindReceiptAnalyzeByS3FilePath(s3FilePath string) (*domainmodel.ReceiptAnalyze, error) {
+	args := m.Called(s3FilePath)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*domainmodel.ReceiptAnalyze), args.Error(1)
+}
+
 // MockFileStorageRepository is a mock of FileStorageRepository
 type MockFileStorageRepository struct {
 	mock.Mock
@@ -167,9 +175,18 @@ func TestCreateReceiptAnalyzeResult(t *testing.T) {
 		{
 			name: "正常系：結果が保存される",
 			receipt: &domainmodel.ReceiptAnalyze{
-				HouseholdBookID: 123,
+				ID:         123,
+				TotalPrice: 1000,
+				S3FilePath: "test/path.jpg",
+				Items:      []domainmodel.ReceiptAnalyzeItem{},
 			},
 			mockSetup: func(repo *MockReceiptAnalyzeRepository) {
+				repo.On("FindReceiptAnalyzeByS3FilePath", "test/path.jpg").Return(&domainmodel.ReceiptAnalyze{
+					ID:         123,
+					TotalPrice: 1000,
+					S3FilePath: "test/path.jpg",
+					Items:      []domainmodel.ReceiptAnalyzeItem{},
+				}, nil)
 				repo.On("CreateReceiptAnalyzeResult", mock.Anything).Return(nil)
 			},
 			expectedError: nil,
@@ -177,9 +194,18 @@ func TestCreateReceiptAnalyzeResult(t *testing.T) {
 		{
 			name: "異常系：DB保存エラー",
 			receipt: &domainmodel.ReceiptAnalyze{
-				HouseholdBookID: 123,
+				ID:         123,
+				TotalPrice: 1000,
+				S3FilePath: "test/path.jpg",
+				Items:      []domainmodel.ReceiptAnalyzeItem{},
 			},
 			mockSetup: func(repo *MockReceiptAnalyzeRepository) {
+				repo.On("FindReceiptAnalyzeByS3FilePath", "test/path.jpg").Return(&domainmodel.ReceiptAnalyze{
+					ID:         123,
+					TotalPrice: 1000,
+					S3FilePath: "test/path.jpg",
+					Items:      []domainmodel.ReceiptAnalyzeItem{},
+				}, nil)
 				repo.On("CreateReceiptAnalyzeResult", mock.Anything).Return(errors.New("db error"))
 			},
 			expectedError: errors.New("db error"),

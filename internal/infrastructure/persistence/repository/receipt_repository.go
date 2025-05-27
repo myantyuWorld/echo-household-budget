@@ -11,6 +11,30 @@ type ReceiptRepository struct {
 	db *gorm.DB
 }
 
+// FindReceiptAnalyzeByS3FilePath implements domainmodel.ReceiptAnalyzeRepository.
+func (r *ReceiptRepository) FindReceiptAnalyzeByS3FilePath(s3FilePath string) (*domainmodel.ReceiptAnalyze, error) {
+	var models models.ReceiptAnalyzes
+	if err := r.db.Where("image_url = ?", s3FilePath).
+		First(&models).Error; err != nil {
+		return nil, err
+	}
+
+	var items []domainmodel.ReceiptAnalyzeItem
+	for _, item := range models.Items {
+		items = append(items, domainmodel.ReceiptAnalyzeItem{
+			Name:  item.Name,
+			Price: uint(item.Price),
+		})
+	}
+
+	return &domainmodel.ReceiptAnalyze{
+		ID:         uint(models.ID),
+		TotalPrice: uint(models.TotalPrice),
+		S3FilePath: models.ImageURL,
+		Items:      items,
+	}, nil
+}
+
 // CreateReceiptAnalyzeReception implements domainmodel.ReceiptAnalyzeRepository.
 func (r *ReceiptRepository) CreateReceiptAnalyzeReception(receiptAnalyze *domainmodel.ReceiptAnalyzeReception) error {
 	model := models.ReceiptAnalyzes{
@@ -24,7 +48,34 @@ func (r *ReceiptRepository) CreateReceiptAnalyzeReception(receiptAnalyze *domain
 
 // CreateReceiptAnalyzeResult implements domainmodel.ReceiptAnalyzeRepository.
 func (r *ReceiptRepository) CreateReceiptAnalyzeResult(receiptAnalyze *domainmodel.ReceiptAnalyze) error {
-	panic("unimplemented")
+	err := r.db.Transaction(func(tx *gorm.DB) error {
+		items := make([]models.ReceiptAnalyzeItems, len(receiptAnalyze.Items))
+		for i, item := range receiptAnalyze.Items {
+			items[i] = models.ReceiptAnalyzeItems{
+				ReceiptAnalyzeID: int(receiptAnalyze.ID),
+				Name:             item.Name,
+				Price:            int(item.Price),
+			}
+		}
+
+		if err := tx.Create(&items).Error; err != nil {
+			return err
+		}
+
+		model := models.ReceiptAnalyzes{
+			TotalPrice:    int(receiptAnalyze.TotalPrice),
+			AnalyzeStatus: "finished",
+			Items:         items,
+		}
+
+		if err := tx.Model(&models.ReceiptAnalyzes{}).Where("id = ?", receiptAnalyze.ID).Updates(&model).Error; err != nil {
+			return err
+		}
+
+		return nil
+	})
+
+	return err
 }
 
 // FindByID implements domainmodel.ReceiptAnalyzeRepository.
@@ -40,17 +91,15 @@ func (r *ReceiptRepository) FindByID(id domainmodel.HouseHoldID) (*domainmodel.R
 	for _, item := range models.Items {
 		items = append(items, domainmodel.ReceiptAnalyzeItem{
 			Name:  item.Name,
-			Price: item.Price,
+			Price: uint(item.Price),
 		})
 	}
 
 	return &domainmodel.ReceiptAnalyze{
-		ID:              models.ID,
-		ImageURL:        models.ImageURL,
-		AnalyzeStatus:   models.AnalyzeStatus,
-		TotalPrice:      models.TotalPrice,
-		HouseholdBookID: domainmodel.HouseHoldID(models.HouseholdBookID),
-		Items:           items,
+		ID:         uint(models.ID),
+		TotalPrice: uint(models.TotalPrice),
+		S3FilePath: models.ImageURL,
+		Items:      items,
 	}, nil
 }
 
