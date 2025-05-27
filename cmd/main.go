@@ -15,9 +15,10 @@ import (
 
 	"context"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
 	awsconfig "github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/credentials"
 	awss3 "github.com/aws/aws-sdk-go-v2/service/s3"
-	"github.com/davecgh/go-spew/spew"
 	"github.com/labstack/echo/v4"
 	echomiddleware "github.com/labstack/echo/v4/middleware"
 )
@@ -27,7 +28,7 @@ import (
 func main() {
 	// 設定の読み込み
 	appConfig := appConfig.LoadConfig()
-	spew.Dump(appConfig)
+	// spew.Dump(appConfig)
 
 	// Echoインスタンスの作成
 	e := echo.New()
@@ -65,7 +66,14 @@ func main() {
 	houseHoldRepository := repository.NewHouseHoldRepository(db)
 	shoppingRepository := repository.NewShoppingRepository(db)
 	receiptAnalyzeRepository := repository.NewReceiptRepository(db)
-	cfg, err := awsconfig.LoadDefaultConfig(context.Background())
+	cfg, err := awsconfig.LoadDefaultConfig(context.Background(),
+		awsconfig.WithRegion(appConfig.S3Config.Region),
+		awsconfig.WithCredentialsProvider(aws.NewCredentialsCache(credentials.NewStaticCredentialsProvider(
+			appConfig.S3Config.AccessKeyID,
+			appConfig.S3Config.SecretAccessKey,
+			"",
+		))),
+	)
 	if err != nil {
 		e.Logger.Fatal(err)
 	}

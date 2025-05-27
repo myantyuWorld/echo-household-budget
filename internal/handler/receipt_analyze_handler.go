@@ -6,6 +6,7 @@ import (
 	"echo-household-budget/internal/usecase"
 	"net/http"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/labstack/echo/v4"
 )
 
@@ -41,6 +42,7 @@ func (r *receiptAnalyzeHandler) CreateReceiptAnalyzeReception(c echo.Context) er
 	}
 
 	if err := r.usecase.CreateReceiptAnalyzeReception(receipt); err != nil {
+		spew.Dump(err)
 		return c.JSON(http.StatusInternalServerError, map[string]string{
 			"error": err.Error(),
 		})

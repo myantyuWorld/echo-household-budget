@@ -7,7 +7,7 @@ type ReceiptAnalyzes struct {
 	TotalPrice      int                   `gorm:"not null"`
 	HouseholdBookID int                   `gorm:"not null"`
 	HouseholdBook   HouseholdBook         `gorm:"foreignKey:HouseholdBookID"`
-	Items           []ReceiptAnalyzeItems `gorm:"foreignKey:ReceiptAnalyzeID"`
+	Items           []ReceiptAnalyzeItems `gorm:"foreignKey:ReceiptAnalyzeID;references:ID"`
 }
 
 func (ReceiptAnalyzes) TableName() string {
