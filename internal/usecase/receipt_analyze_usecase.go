@@ -6,6 +6,7 @@ import (
 	"echo-household-budget/internal/domain/repository"
 	"encoding/base64"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -19,7 +20,9 @@ type receiptAnalyzeUsecase struct {
 // CreateReceiptAnalyzeReception implements ReceiptAnalyzeUsecase.
 func (r *receiptAnalyzeUsecase) CreateReceiptAnalyzeReception(receipt *domainmodel.ReceiptAnalyzeReception) error {
 	var imageURL string
-	imageData, err := base64.StdEncoding.DecodeString(receipt.ImageData)
+	b64data := receipt.ImageData[strings.IndexByte(receipt.ImageData, ',')+1:]
+
+	imageData, err := base64.StdEncoding.DecodeString(b64data)
 	if err != nil {
 		return err
 	}

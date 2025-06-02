@@ -40,7 +40,7 @@ func (r *receiptAnalyzeHandler) CreateReceiptAnalyzeReception(c echo.Context) er
 		})
 	}
 
-	if req.ImageData == "" {
+	if len(req.ImageData) == 0 {
 		return c.JSON(http.StatusBadRequest, map[string]string{
 			"error": "image_data is required",
 		})
