@@ -2,8 +2,10 @@ package middleware
 
 import (
 	"echo-household-budget/internal/shared/errors"
+	"fmt"
 	"net/http"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/labstack/echo/v4"
 )
 
@@ -21,6 +23,11 @@ func ErrorHandler() echo.MiddlewareFunc {
 			if err == nil {
 				return nil
 			}
+
+			fmt.Println("===============")
+			fmt.Println("ErrorHandler")
+			fmt.Println("===============")
+			spew.Dump(err)
 
 			// AppErrorの場合は適切なステータスコードとメッセージを返す
 			if appErr, ok := errors.GetAppError(err); ok {
