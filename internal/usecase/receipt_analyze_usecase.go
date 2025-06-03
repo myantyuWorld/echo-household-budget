@@ -19,7 +19,6 @@ type receiptAnalyzeUsecase struct {
 
 // CreateReceiptAnalyzeReception implements ReceiptAnalyzeUsecase.
 func (r *receiptAnalyzeUsecase) CreateReceiptAnalyzeReception(receipt *domainmodel.ReceiptAnalyzeReception) error {
-	var imageURL string
 	b64data := receipt.ImageData[strings.IndexByte(receipt.ImageData, ',')+1:]
 
 	imageData, err := base64.StdEncoding.DecodeString(b64data)
@@ -28,12 +27,12 @@ func (r *receiptAnalyzeUsecase) CreateReceiptAnalyzeReception(receipt *domainmod
 	}
 	// uuid-household_id-yyyyMMddHHmmss.jpg
 	fileName := fmt.Sprintf("%s-%d-%s.jpg", uuid.New().String(), receipt.HouseholdBookID, time.Now().Format("20060102150405"))
-	imageURL, err = r.fileStorage.UploadFile(imageData, fileName)
+	_, err = r.fileStorage.UploadFile(imageData, fileName)
 	if err != nil {
 		return err
 	}
 
-	receipt.ImageURL = imageURL
+	receipt.ImageURL = fileName
 	return r.repo.CreateReceiptAnalyzeReception(receipt)
 }
 
