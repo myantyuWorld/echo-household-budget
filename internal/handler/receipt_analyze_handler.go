@@ -18,10 +18,12 @@ type receiptAnalyzeHandler struct {
 type CreateReceiptRequest struct {
 	HouseholdID uint   `json:"householdID" param:"houseHoldID"`
 	ImageData   string `json:"imageData"`
+	CategoryID  uint   `json:"categoryID"`
 }
 
 type CreateReceiptAnalyzeResultRequest struct {
 	Total      uint                 `json:"total"`
+	CategoryID uint                 `json:"categoryID"`
 	S3FilePath string               `json:"s3FilePath"`
 	Items      []ReceiptAnalyzeItem `json:"items"`
 }
@@ -49,6 +51,7 @@ func (r *receiptAnalyzeHandler) CreateReceiptAnalyzeReception(c echo.Context) er
 	receipt := &domainmodel.ReceiptAnalyzeReception{
 		HouseholdBookID: domainmodel.HouseHoldID(req.HouseholdID),
 		ImageData:       req.ImageData,
+		CategoryID:      domainmodel.CategoryID(req.CategoryID),
 	}
 
 	if err := r.usecase.CreateReceiptAnalyzeReception(receipt); err != nil {
@@ -83,6 +86,7 @@ func (r *receiptAnalyzeHandler) CreateReceiptAnalyzeResult(c echo.Context) error
 
 	result := &domainmodel.ReceiptAnalyze{
 		TotalPrice: req.Total,
+		CategoryID: domainmodel.CategoryID(req.CategoryID),
 		S3FilePath: req.S3FilePath,
 		Items:      items,
 	}

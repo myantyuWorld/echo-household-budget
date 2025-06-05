@@ -28,10 +28,11 @@ func (r *ReceiptRepository) FindReceiptAnalyzeByS3FilePath(s3FilePath string) (*
 	}
 
 	return &domainmodel.ReceiptAnalyze{
-		ID:         uint(models.ID),
-		TotalPrice: uint(models.TotalPrice),
-		S3FilePath: models.ImageURL,
-		Items:      items,
+		ID:              uint(models.ID),
+		TotalPrice:      uint(models.TotalPrice),
+		S3FilePath:      models.ImageURL,
+		HouseholdBookID: domainmodel.HouseHoldID(models.HouseholdBookID),
+		Items:           items,
 	}, nil
 }
 

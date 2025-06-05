@@ -1,16 +1,19 @@
 package domainmodel
 
 type ReceiptAnalyze struct {
-	ID         uint
-	TotalPrice uint
-	S3FilePath string
-	Items      []ReceiptAnalyzeItem
+	ID              uint
+	TotalPrice      uint
+	CategoryID      CategoryID
+	S3FilePath      string
+	HouseholdBookID HouseHoldID
+	Items           []ReceiptAnalyzeItem
 }
 
 type ReceiptAnalyzeReception struct {
 	ImageURL        string
 	ImageData       string
 	HouseholdBookID HouseHoldID
+	CategoryID      CategoryID
 }
 
 type ReceiptAnalyzeItem struct {

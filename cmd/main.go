@@ -87,7 +87,7 @@ func main() {
 	kaimemoService := usecase.NewKaimemoService(kaimemoRepository)
 	shoppingUsecase := usecase.NewShoppingUsecase(shoppingRepository)
 	lineAuthService := usecase.NewLineAuthService(lineRepository, userAccountRepository, userAccountService, sessionManager)
-	receiptAnalyzeUsecase := usecase.NewReceiptAnalyzeUsecase(receiptAnalyzeRepository, fileStorageRepository)
+	receiptAnalyzeUsecase := usecase.NewReceiptAnalyzeUsecase(receiptAnalyzeRepository, fileStorageRepository, houseHoldService)
 
 	// ハンドラーの初期化
 	kaimemoHandler := handler.NewKaimemoHandler(kaimemoService, shoppingUsecase)

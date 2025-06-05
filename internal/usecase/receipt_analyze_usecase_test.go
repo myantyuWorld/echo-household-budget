@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	domainmodel "echo-household-budget/internal/domain/model"
+	domainservice "echo-household-budget/internal/domain/service"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -59,6 +60,51 @@ func (m *MockFileStorageRepository) DeleteFile(fileName string) error {
 func (m *MockFileStorageRepository) GetFileURL(fileName string) (string, error) {
 	args := m.Called(fileName)
 	return args.String(0), args.Error(1)
+}
+
+// MockHouseHoldServiceの定義
+type MockHouseHoldService struct {
+	mock.Mock
+}
+
+func (m *MockHouseHoldService) FetchHouseHold(houseHoldID domainmodel.HouseHoldID) (*domainmodel.HouseHold, error) {
+	args := m.Called(houseHoldID)
+	return args.Get(0).(*domainmodel.HouseHold), args.Error(1)
+}
+
+func (m *MockHouseHoldService) ShareHouseHold(houseHoldID domainmodel.HouseHoldID, inviteUserID domainmodel.UserID) error {
+	args := m.Called(houseHoldID, inviteUserID)
+	return args.Error(0)
+}
+
+func (m *MockHouseHoldService) FetchShoppingAmount(input domainservice.FetchShoppingRecordInput) ([]*domainmodel.ShoppingAmount, error) {
+	args := m.Called(input)
+	return args.Get(0).([]*domainmodel.ShoppingAmount), args.Error(1)
+}
+
+func (m *MockHouseHoldService) AddUserHouseHold(houseHold *domainmodel.HouseHold) error {
+	args := m.Called(houseHold)
+	return args.Error(0)
+}
+
+func (m *MockHouseHoldService) AddHouseHoldCategory(houseHoldID domainmodel.HouseHoldID, categoryName string, categoryLimitAmount int) error {
+	args := m.Called(houseHoldID, categoryName, categoryLimitAmount)
+	return args.Error(0)
+}
+
+func (m *MockHouseHoldService) CreateShoppingAmount(shoppingAmount *domainmodel.ShoppingAmount) error {
+	args := m.Called(shoppingAmount)
+	return args.Error(0)
+}
+
+func (m *MockHouseHoldService) RemoveShoppingAmount(shoppingAmountID domainmodel.ShoppingID) error {
+	args := m.Called(shoppingAmountID)
+	return args.Error(0)
+}
+
+func (m *MockHouseHoldService) SummarizeShoppingAmount(input domainservice.FetchShoppingRecordInput) (*domainmodel.SummarizeShoppingAmounts, error) {
+	args := m.Called(input)
+	return args.Get(0).(*domainmodel.SummarizeShoppingAmounts), args.Error(1)
 }
 
 func TestCreateReceiptAnalyzeReception(t *testing.T) {
@@ -169,7 +215,7 @@ func TestCreateReceiptAnalyzeResult(t *testing.T) {
 	tests := []struct {
 		name          string
 		receipt       *domainmodel.ReceiptAnalyze
-		mockSetup     func(*MockReceiptAnalyzeRepository)
+		mockSetup     func(*MockReceiptAnalyzeRepository, *MockHouseHoldService)
 		expectedError error
 	}{
 		{
@@ -180,7 +226,7 @@ func TestCreateReceiptAnalyzeResult(t *testing.T) {
 				S3FilePath: "test/path.jpg",
 				Items:      []domainmodel.ReceiptAnalyzeItem{},
 			},
-			mockSetup: func(repo *MockReceiptAnalyzeRepository) {
+			mockSetup: func(repo *MockReceiptAnalyzeRepository, houseHoldService *MockHouseHoldService) {
 				repo.On("FindReceiptAnalyzeByS3FilePath", "test/path.jpg").Return(&domainmodel.ReceiptAnalyze{
 					ID:         123,
 					TotalPrice: 1000,
@@ -188,6 +234,7 @@ func TestCreateReceiptAnalyzeResult(t *testing.T) {
 					Items:      []domainmodel.ReceiptAnalyzeItem{},
 				}, nil)
 				repo.On("CreateReceiptAnalyzeResult", mock.Anything).Return(nil)
+				houseHoldService.On("CreateShoppingAmount", mock.Anything).Return(nil)
 			},
 			expectedError: nil,
 		},
@@ -199,7 +246,7 @@ func TestCreateReceiptAnalyzeResult(t *testing.T) {
 				S3FilePath: "test/path.jpg",
 				Items:      []domainmodel.ReceiptAnalyzeItem{},
 			},
-			mockSetup: func(repo *MockReceiptAnalyzeRepository) {
+			mockSetup: func(repo *MockReceiptAnalyzeRepository, houseHoldService *MockHouseHoldService) {
 				repo.On("FindReceiptAnalyzeByS3FilePath", "test/path.jpg").Return(&domainmodel.ReceiptAnalyze{
 					ID:         123,
 					TotalPrice: 1000,
@@ -216,11 +263,13 @@ func TestCreateReceiptAnalyzeResult(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// モックの準備
 			mockRepo := new(MockReceiptAnalyzeRepository)
-			tt.mockSetup(mockRepo)
+			mockHouseHoldService := new(MockHouseHoldService)
+			tt.mockSetup(mockRepo, mockHouseHoldService)
 
 			// テスト対象のインスタンス作成
 			usecase := &receiptAnalyzeUsecase{
-				repo: mockRepo,
+				repo:             mockRepo,
+				houseHoldService: mockHouseHoldService,
 			}
 
 			// テスト実行
@@ -236,6 +285,7 @@ func TestCreateReceiptAnalyzeResult(t *testing.T) {
 
 			// モックの検証
 			mockRepo.AssertExpectations(t)
+			mockHouseHoldService.AssertExpectations(t)
 		})
 	}
 }

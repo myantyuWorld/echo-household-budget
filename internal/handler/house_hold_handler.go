@@ -77,7 +77,7 @@ func (h *houseHoldHandler) CreateShoppingRecord(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, err.Error())
 	}
 
-	shoppingAmount := domainmodel.NewShoppingAmount(domainmodel.HouseHoldID(req.HouseholdID), domainmodel.CategoryID(req.CategoryID), req.Amount, req.Date, req.Memo)
+	shoppingAmount := domainmodel.NewShoppingAmount(domainmodel.HouseHoldID(req.HouseholdID), domainmodel.CategoryID(req.CategoryID), req.Amount, req.Date, req.Memo, 0)
 
 	if err := h.service.CreateShoppingAmount(shoppingAmount); err != nil {
 		return c.JSON(http.StatusInternalServerError, err.Error())
