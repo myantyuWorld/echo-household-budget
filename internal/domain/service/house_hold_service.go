@@ -98,6 +98,7 @@ func (h *houseHoldService) CreateShoppingAmount(shoppingAmount *domainmodel.Shop
 		Amount:          shoppingAmount.Amount,
 		Date:            date,
 		Memo:            shoppingAmount.Memo,
+		AnalyzeID:       shoppingAmount.AnalyzeID,
 	}
 
 	return h.shoppingRepository.RegisterShoppingAmount(model)

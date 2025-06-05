@@ -4,6 +4,7 @@ package usecase
 import (
 	domainmodel "echo-household-budget/internal/domain/model"
 	"echo-household-budget/internal/domain/repository"
+	domainservice "echo-household-budget/internal/domain/service"
 	"encoding/base64"
 	"fmt"
 	"strings"
@@ -13,8 +14,9 @@ import (
 )
 
 type receiptAnalyzeUsecase struct {
-	repo        domainmodel.ReceiptAnalyzeRepository
-	fileStorage repository.FileStorageRepository
+	repo             domainmodel.ReceiptAnalyzeRepository
+	fileStorage      repository.FileStorageRepository
+	houseHoldService domainservice.HouseHoldService
 }
 
 // CreateReceiptAnalyzeReception implements ReceiptAnalyzeUsecase.
@@ -46,9 +48,16 @@ func (r *receiptAnalyzeUsecase) CreateReceiptAnalyzeResult(receipt *domainmodel.
 	receiptAnalyze.TotalPrice = receipt.TotalPrice
 	receiptAnalyze.Items = receipt.Items
 
-	// TODO: ここで、shopping_amounts に登録する
+	if err := r.repo.CreateReceiptAnalyzeResult(receiptAnalyze); err != nil {
+		return err
+	}
 
-	return r.repo.CreateReceiptAnalyzeResult(receiptAnalyze)
+	shoppingAmount := domainmodel.NewShoppingAmount(receiptAnalyze.HouseholdBookID, receipt.CategoryID, int(receiptAnalyze.TotalPrice), time.Now().Format("2006-01-02"), "aiによるレシート分析", int(receiptAnalyze.ID))
+	if err := r.houseHoldService.CreateShoppingAmount(shoppingAmount); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // FindByID implements ReceiptAnalyzeUsecase.
@@ -62,6 +71,6 @@ type ReceiptAnalyzeUsecase interface {
 	FindByID(id domainmodel.HouseHoldID) (*domainmodel.ReceiptAnalyze, error)
 }
 
-func NewReceiptAnalyzeUsecase(repo domainmodel.ReceiptAnalyzeRepository, fileStorage repository.FileStorageRepository) ReceiptAnalyzeUsecase {
-	return &receiptAnalyzeUsecase{repo: repo, fileStorage: fileStorage}
+func NewReceiptAnalyzeUsecase(repo domainmodel.ReceiptAnalyzeRepository, fileStorage repository.FileStorageRepository, houseHoldService domainservice.HouseHoldService) ReceiptAnalyzeUsecase {
+	return &receiptAnalyzeUsecase{repo: repo, fileStorage: fileStorage, houseHoldService: houseHoldService}
 }

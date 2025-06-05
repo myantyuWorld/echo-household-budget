@@ -23,6 +23,7 @@ type ShoppingAmount struct {
 	Date        string      `json:"date"`
 	Memo        string      `json:"memo"`
 	Category    Category    `json:"category"`
+	AnalyzeID   int         `json:"analyze_id"`
 }
 
 type CategoryAmount struct {
@@ -101,13 +102,14 @@ func NewShoppingMemo(householdID HouseHoldID, categoryID CategoryID, title strin
 	}
 }
 
-func NewShoppingAmount(householdID HouseHoldID, categoryID CategoryID, amount int, date string, memo string) *ShoppingAmount {
+func NewShoppingAmount(householdID HouseHoldID, categoryID CategoryID, amount int, date string, memo string, analyzeID int) *ShoppingAmount {
 	return &ShoppingAmount{
 		HouseholdID: householdID,
 		CategoryID:  categoryID,
 		Amount:      amount,
 		Date:        date,
 		Memo:        memo,
+		AnalyzeID:   analyzeID,
 	}
 }
 
