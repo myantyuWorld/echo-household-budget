@@ -423,6 +423,8 @@ paths:
               properties:
                 imageData:
                   type: string
+                categoryID:
+                  type: integer
       responses:
         200:
           description: OK

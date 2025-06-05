@@ -25,8 +25,8 @@ func (r *receiptAnalyzeUsecase) CreateReceiptAnalyzeReception(receipt *domainmod
 	if err != nil {
 		return err
 	}
-	// uuid-household_id-yyyyMMddHHmmss.jpg
-	fileName := fmt.Sprintf("%s-%d-%s.jpg", uuid.New().String(), receipt.HouseholdBookID, time.Now().Format("20060102150405"))
+	// uuid-household_id-category_id-yyyyMMddHHmmss.jpg
+	fileName := fmt.Sprintf("%s-%d-%d-%s.jpg", uuid.New().String(), receipt.HouseholdBookID, receipt.CategoryID, time.Now().Format("20060102150405"))
 	_, err = r.fileStorage.UploadFile(imageData, fileName)
 	if err != nil {
 		return err
@@ -45,6 +45,8 @@ func (r *receiptAnalyzeUsecase) CreateReceiptAnalyzeResult(receipt *domainmodel.
 
 	receiptAnalyze.TotalPrice = receipt.TotalPrice
 	receiptAnalyze.Items = receipt.Items
+
+	// TODO: ここで、shopping_amounts に登録する
 
 	return r.repo.CreateReceiptAnalyzeResult(receiptAnalyze)
 }
