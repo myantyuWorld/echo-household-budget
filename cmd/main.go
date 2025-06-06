@@ -33,6 +33,9 @@ func main() {
 	// Echoインスタンスの作成
 	e := echo.New()
 
+	// リクエストロガーミドルウェアの追加
+	e.Use(middleware.RequestLoggerMiddleware())
+
 	// データベース接続の設定
 	db, err := config.NewDBConnection(appConfig.DatabaseConfig)
 	if err != nil {

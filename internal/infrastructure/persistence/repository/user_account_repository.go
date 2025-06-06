@@ -3,9 +3,7 @@ package repository
 import (
 	domainmodel "echo-household-budget/internal/domain/model"
 	"echo-household-budget/internal/infrastructure/persistence/models"
-	"fmt"
 
-	"github.com/davecgh/go-spew/spew"
 	"gorm.io/gorm"
 )
 
@@ -30,10 +28,6 @@ func (r *UserAccountRepository) fetchUserAccount(condition string, args ...inter
 	householdBooks := make([]*domainmodel.HouseHold, len(userAccount.HouseholdBooks))
 
 	for i, hb := range userAccount.HouseholdBooks {
-		fmt.Println("-----------------------------------------", hb.ID)
-		spew.Dump(hb)
-		fmt.Println("-----------------------------------------", hb.ID)
-
 		householdBooks[i] = &domainmodel.HouseHold{
 			ID:          domainmodel.HouseHoldID(hb.ID),
 			Title:       hb.Title,
