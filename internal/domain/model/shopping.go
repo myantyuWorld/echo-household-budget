@@ -3,6 +3,8 @@ package domainmodel
 
 import (
 	"echo-household-budget/internal/infrastructure/persistence/models"
+
+	"github.com/davecgh/go-spew/spew"
 )
 
 type ShoppingMemo struct {
@@ -16,14 +18,15 @@ type ShoppingMemo struct {
 }
 
 type ShoppingAmount struct {
-	ID          ShoppingID  `json:"id"`
-	HouseholdID HouseHoldID `json:"household_id"`
-	CategoryID  CategoryID  `json:"category_id"`
-	Amount      int         `json:"amount"`
-	Date        string      `json:"date"`
-	Memo        string      `json:"memo"`
-	Category    Category    `json:"category"`
-	AnalyzeID   int         `json:"analyze_id"`
+	ID          ShoppingID     `json:"id"`
+	HouseholdID HouseHoldID    `json:"household_id"`
+	CategoryID  CategoryID     `json:"category_id"`
+	Amount      int            `json:"amount"`
+	Date        string         `json:"date"`
+	Memo        string         `json:"memo"`
+	Category    Category       `json:"category"`
+	AnalyzeID   int            `json:"analyze_id"`
+	Analyze     ReceiptAnalyze `json:"receipt_analyze_results"`
 }
 
 type CategoryAmount struct {
@@ -79,6 +82,28 @@ func NewSummarizeShoppingAmounts(shoppingAmounts ShoppingAmounts) *SummarizeShop
 }
 
 func ConvertShoppingAmountsToShoppingAmount(shoppingAmount *models.ShoppingAmount) *ShoppingAmount {
+	items := []ReceiptAnalyzeItem{}
+	spew.Dump(shoppingAmount.Analyze)
+	if shoppingAmount.Analyze != nil {
+		for _, item := range shoppingAmount.Analyze.Items {
+			items = append(items, ReceiptAnalyzeItem{
+				Name:  item.Name,
+				Price: uint(item.Price),
+			})
+		}
+	}
+	analyze := ReceiptAnalyze{}
+	if shoppingAmount.Analyze != nil {
+		analyze = ReceiptAnalyze{
+			ID:              uint(shoppingAmount.Analyze.ID),
+			TotalPrice:      uint(shoppingAmount.Analyze.TotalPrice),
+			CategoryID:      CategoryID(shoppingAmount.CategoryID),
+			S3FilePath:      shoppingAmount.Analyze.ImageURL,
+			HouseholdBookID: HouseHoldID(shoppingAmount.Analyze.HouseholdBookID),
+			Items:           items,
+		}
+	}
+
 	return &ShoppingAmount{
 		ID:          ShoppingID(shoppingAmount.ID),
 		HouseholdID: HouseHoldID(shoppingAmount.HouseholdBookID),
@@ -88,7 +113,9 @@ func ConvertShoppingAmountsToShoppingAmount(shoppingAmount *models.ShoppingAmoun
 		Memo:        shoppingAmount.Memo,
 		// TODO : カテゴリについて、家計簿ごとに、上限金額を設定できるようにした上で、上限金額を取得するようにする
 		// HouseHoldCategory、のようなモデルが必要か
-		Category: Category{ID: CategoryID(shoppingAmount.CategoryID), Name: shoppingAmount.Category.Name, Color: shoppingAmount.Category.Color},
+		Category:  Category{ID: CategoryID(shoppingAmount.CategoryID), Name: shoppingAmount.Category.Name, Color: shoppingAmount.Category.Color},
+		AnalyzeID: int(shoppingAmount.AnalyzeID),
+		Analyze:   analyze,
 	}
 }
 
