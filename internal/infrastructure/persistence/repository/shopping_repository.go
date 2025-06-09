@@ -43,7 +43,8 @@ func (s *shoppingRepository) FetchShoppingAmountItemByHouseholdID(householdID do
 	// TODO
 	// カテゴリについて、家計簿ごとに、上限金額を設定できるようにした上で、上限金額を取得するようにする
 	model := []*models.ShoppingAmount{}
-	if err := s.db.Debug().Where("household_book_id = ? AND date BETWEEN ? AND ?", householdID, startDateMonth, endDateMonth).Preload("Category").Find(&model).Error; err != nil {
+	if err := s.db.Debug().Where("household_book_id = ? AND date BETWEEN ? AND ?", householdID, startDateMonth, endDateMonth).Preload("Category").
+		Preload("Analyze.Items").Find(&model).Error; err != nil {
 		return nil, err
 	}
 

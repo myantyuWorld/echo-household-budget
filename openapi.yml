@@ -434,8 +434,37 @@ paths:
           $ref: '#/components/responses/NotFoundError'
         default:
           $ref: '#/components/responses/GeneralError'
+  /openai/analyze/receipt/result/{receiptAnalyzeID}:
+    get:
+      tags:
+        - OpenAI
+      summary: レシート分析結果取得
+      description: レシート分析結果を取得する
+      parameters:
+        - name: receiptAnalyzeID
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        200:
+          $ref: '#/components/responses/GetReceiptAnalyzeResult'
+        401:
+          $ref: '#/components/responses/UnauthorizedError'
+        404:
+          $ref: '#/components/responses/NotFoundError'
+        default:
+          $ref: '#/components/responses/GeneralError'
+
 components:
   responses:
+    GetReceiptAnalyzeResult:
+      description: レシート分析結果取得
+      content:
+        application/json:
+          schema:
+            type: object
+            $ref: '#/components/schemas/ReceiptAnalyzeResult'
     GetShoppingRecord:
       description: 買い物記録取得
       content:
@@ -635,6 +664,11 @@ components:
           type: string
         category:
           $ref: '#/components/schemas/Category'
+        analyze_id:
+          type: integer
+        receipt_analyze_results:
+          type: object
+          $ref: '#/components/schemas/ReceiptAnalyzeResult'
     CategoryAmount:
       type: object
       properties:
@@ -657,3 +691,25 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/CategoryAmount'
+    ReceiptAnalyzeResultItem:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        amount:
+          type: integer
+    ReceiptAnalyzeResult:
+      type: object
+      properties:
+        id:
+          type: integer
+        totalAmount:
+          type: integer
+        receiptImageURL:
+          type: string
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ReceiptAnalyzeResultItem'

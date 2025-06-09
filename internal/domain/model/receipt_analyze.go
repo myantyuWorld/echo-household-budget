@@ -1,12 +1,12 @@
 package domainmodel
 
 type ReceiptAnalyze struct {
-	ID              uint
-	TotalPrice      uint
-	CategoryID      CategoryID
-	S3FilePath      string
-	HouseholdBookID HouseHoldID
-	Items           []ReceiptAnalyzeItem
+	ID              uint                 `json:"id"`
+	TotalPrice      uint                 `json:"totalAmount"`
+	CategoryID      CategoryID           `json:"categoryID"`
+	S3FilePath      string               `json:"receiptImageURL"`
+	HouseholdBookID HouseHoldID          `json:"householdID"`
+	Items           []ReceiptAnalyzeItem `json:"items"`
 }
 
 type ReceiptAnalyzeReception struct {
@@ -17,8 +17,8 @@ type ReceiptAnalyzeReception struct {
 }
 
 type ReceiptAnalyzeItem struct {
-	Name  string
-	Price uint
+	Name  string `json:"name"`
+	Price uint   `json:"amount"`
 }
 
 type ReceiptAnalyzeRepository interface {
