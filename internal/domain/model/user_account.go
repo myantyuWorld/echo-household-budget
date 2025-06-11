@@ -22,6 +22,7 @@ type UserAccountRepository interface {
 	Delete(id UserID) error
 	FindByLINEUserID(userID LINEUserID) (*UserAccount, error)
 	FetchMe(userID UserID) (*UserAccount, error)
+	FetchAll() ([]*UserAccount, error)
 }
 
 type LINEUserID string

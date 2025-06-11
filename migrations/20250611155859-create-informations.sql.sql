@@ -5,7 +5,6 @@ CREATE TABLE IF NOT EXISTS informations (
   id SERIAL PRIMARY KEY,
   title VARCHAR(255) NOT NULL,
   content TEXT NOT NULL,
-  date DATE NOT NULL,
   category information_category NOT NULL,
   is_published BOOLEAN NOT NULL DEFAULT FALSE,
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,

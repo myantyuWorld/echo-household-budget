@@ -71,6 +71,26 @@ func (r *UserAccountRepository) FindByLINEUserID(userID domainmodel.LINEUserID) 
 	return r.fetchUserAccount("user_id = ?", userID)
 }
 
+// FetchAll implements domainmodel.UserAccountRepository.
+func (r *UserAccountRepository) FetchAll() ([]*domainmodel.UserAccount, error) {
+	var userAccounts []*models.UserAccount
+	if err := r.db.Find(&userAccounts).Error; err != nil {
+		return nil, err
+	}
+
+	domainUserAccounts := make([]*domainmodel.UserAccount, len(userAccounts))
+	for i, userAccount := range userAccounts {
+		domainUserAccounts[i] = &domainmodel.UserAccount{
+			ID:         domainmodel.UserID(userAccount.ID),
+			UserID:     domainmodel.LINEUserID(userAccount.UserID),
+			Name:       userAccount.Name,
+			PictureURL: userAccount.PictureURL,
+		}
+	}
+
+	return domainUserAccounts, nil
+}
+
 // NewUserAccountRepository は新しいUserAccountRepositoryを作成します
 func NewUserAccountRepository(db *gorm.DB) domainmodel.UserAccountRepository {
 	return &UserAccountRepository{

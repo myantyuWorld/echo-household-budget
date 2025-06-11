@@ -68,6 +68,21 @@ func (mr *MockUserAccountRepositoryMockRecorder) Delete(id any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*MockUserAccountRepository)(nil).Delete), id)
 }
 
+// FetchAll mocks base method.
+func (m *MockUserAccountRepository) FetchAll() ([]*domainmodel.UserAccount, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FetchAll")
+	ret0, _ := ret[0].([]*domainmodel.UserAccount)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// FetchAll indicates an expected call of FetchAll.
+func (mr *MockUserAccountRepositoryMockRecorder) FetchAll() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FetchAll", reflect.TypeOf((*MockUserAccountRepository)(nil).FetchAll))
+}
+
 // FetchMe mocks base method.
 func (m *MockUserAccountRepository) FetchMe(userID domainmodel.UserID) (*domainmodel.UserAccount, error) {
 	m.ctrl.T.Helper()

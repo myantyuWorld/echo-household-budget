@@ -1,7 +1,7 @@
 -- +migrate Up
 CREATE TABLE IF NOT EXISTS user_informations (
   id SERIAL PRIMARY KEY,
-  user_id VARCHAR(255) NOT NULL,
+  user_id INTEGER NOT NULL,
   information_id INTEGER NOT NULL,
   is_read BOOLEAN NOT NULL DEFAULT FALSE,
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
