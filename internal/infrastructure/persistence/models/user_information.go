@@ -5,4 +5,5 @@ type UserInformation struct {
 	InformationID int  `gorm:"not null"`
 	UserID        int  `gorm:"not null"`
 	IsRead        bool `gorm:"not null"`
+	Information   Information
 }

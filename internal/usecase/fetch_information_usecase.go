@@ -3,6 +3,8 @@ package usecase
 import (
 	domainmodel "echo-household-budget/internal/domain/model"
 	repository "echo-household-budget/internal/domain/repository"
+
+	"github.com/davecgh/go-spew/spew"
 )
 
 type (
@@ -38,6 +40,8 @@ func (f *fetchInformationUsecase) Execute() ([]FetchInformationOutput, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	spew.Dump(informations)
 
 	output := f.makeOutput(informations)
 

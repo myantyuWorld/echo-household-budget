@@ -5,6 +5,7 @@ type UserInformation struct {
 	InformationID int
 	UserID        UserID
 	IsRead        bool
+	Information   *Information
 }
 
 func NewUserInformation(informationID int, userID UserID) *UserInformation {
