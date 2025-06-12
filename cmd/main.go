@@ -69,6 +69,8 @@ func main() {
 	houseHoldRepository := repository.NewHouseHoldRepository(db)
 	shoppingRepository := repository.NewShoppingRepository(db)
 	receiptAnalyzeRepository := repository.NewReceiptRepository(db)
+	informationRepository := repository.NewInformationRepository(db)
+	userInformationRepository := repository.NewUserInformationRepository(db)
 	cfg, err := awsconfig.LoadDefaultConfig(context.Background(),
 		awsconfig.WithRegion(appConfig.S3Config.Region),
 		awsconfig.WithCredentialsProvider(aws.NewCredentialsCache(credentials.NewStaticCredentialsProvider(
@@ -91,12 +93,17 @@ func main() {
 	shoppingUsecase := usecase.NewShoppingUsecase(shoppingRepository)
 	lineAuthService := usecase.NewLineAuthService(lineRepository, userAccountRepository, userAccountService, sessionManager)
 	receiptAnalyzeUsecase := usecase.NewReceiptAnalyzeUsecase(receiptAnalyzeRepository, fileStorageRepository, houseHoldService)
-
+	createInformationUsecase := usecase.NewCreateInformationUsecase(informationRepository)
+	fetchInformationUsecase := usecase.NewFetchInformationUsecase(informationRepository)
+	publishInformationUsecase := usecase.NewPublishInformationUsecase(informationRepository, userInformationRepository, userAccountService)
 	// ハンドラーの初期化
 	kaimemoHandler := handler.NewKaimemoHandler(kaimemoService, shoppingUsecase)
 	lineAuthHandler := handler.NewLineAuthHandler(lineAuthService, appConfig)
 	houseHoldHandler := handler.NewHouseHoldHandler(houseHoldService, userAccountService)
 	receiptAnalyzeHandler := handler.NewReceiptAnalyzeHandler(receiptAnalyzeUsecase)
+	createInformationHandler := handler.NewCreateInformationHandler(createInformationUsecase)
+	fetchInformationHandler := handler.NewFetchInformationsHandler(fetchInformationUsecase)
+	publishInformationHandler := handler.NewPublishInformationHandler(publishInformationUsecase)
 	e.GET("/health", func(c echo.Context) error {
 		return c.JSON(http.StatusOK, map[string]string{
 			"status": "ok",
@@ -135,6 +142,17 @@ func main() {
 	openAI := e.Group("/openai/analyze")
 	openAI.POST("/:householdID/receipt/reception", receiptAnalyzeHandler.CreateReceiptAnalyzeReception)
 	openAI.POST("/:householdID/receipt/result", receiptAnalyzeHandler.CreateReceiptAnalyzeResult)
+
+	// 管理系のエンドポイント
+	admin := e.Group("/admin", middleware.AuthMiddleware(sessionManager, userAccountRepository))
+	admin.GET("/informations", fetchInformationHandler.Handle)
+	admin.POST("/informations", createInformationHandler.Handle)
+
+	admin.DELETE("/informations/:id", handler.NewDeleteInformationHandler().Handle)
+	admin.GET("/informations/:id", handler.NewFetchInformationDetailHandler().Handle)
+	admin.PUT("/informations/:id", handler.NewPutInformationHandler().Handle)
+
+	admin.POST("/informations/:id/publish", publishInformationHandler.Handle)
 
 	// サーバーの起動
 	e.Logger.Fatal(e.Start(fmt.Sprintf(":%s", appConfig.Port)))

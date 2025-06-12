@@ -54,6 +54,21 @@ func (mr *MockUserAccountServiceMockRecorder) CreateUserAccount(lineUserInfo any
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateUserAccount", reflect.TypeOf((*MockUserAccountService)(nil).CreateUserAccount), lineUserInfo)
 }
 
+// FetchAllUserAccount mocks base method.
+func (m *MockUserAccountService) FetchAllUserAccount() ([]*domainmodel.UserAccount, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "FetchAllUserAccount")
+	ret0, _ := ret[0].([]*domainmodel.UserAccount)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// FetchAllUserAccount indicates an expected call of FetchAllUserAccount.
+func (mr *MockUserAccountServiceMockRecorder) FetchAllUserAccount() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FetchAllUserAccount", reflect.TypeOf((*MockUserAccountService)(nil).FetchAllUserAccount))
+}
+
 // FetchUserAccount mocks base method.
 func (m *MockUserAccountService) FetchUserAccount(userID domainmodel.UserID) (*domainmodel.UserAccount, error) {
 	m.ctrl.T.Helper()

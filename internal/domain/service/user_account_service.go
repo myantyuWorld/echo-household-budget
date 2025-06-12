@@ -12,6 +12,7 @@ type UserAccountService interface {
 	CreateUserAccount(lineUserInfo *domainmodel.LINEUserInfo) error
 	IsDuplicateUserAccount(lineUserID domainmodel.LINEUserID) (bool, error)
 	FetchUserAccount(userID domainmodel.UserID) (*domainmodel.UserAccount, error)
+	FetchAllUserAccount() ([]*domainmodel.UserAccount, error)
 }
 
 type userAccountService struct {
@@ -27,6 +28,11 @@ func (s *userAccountService) FetchUserAccount(userID domainmodel.UserID) (*domai
 		return nil, err
 	}
 	return account, nil
+}
+
+// FetchAllUserAccount implements UserAccountService.
+func (s *userAccountService) FetchAllUserAccount() ([]*domainmodel.UserAccount, error) {
+	return s.userAccountRepository.FetchAll()
 }
 
 // IsDuplicateUserAccount implements UserAccountService.
