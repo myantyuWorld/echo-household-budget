@@ -15,7 +15,7 @@ type informationRepository struct {
 // FindAll implements repository.InformationRepository.
 func (i *informationRepository) FindAll() ([]*domainmodel.Information, error) {
 	models := []*models.Information{}
-	if err := i.db.Find(&models).Error; err != nil {
+	if err := i.db.Order("created_at desc").Find(&models).Error; err != nil {
 		return nil, err
 	}
 

@@ -455,6 +455,49 @@ paths:
           $ref: '#/components/responses/NotFoundError'
         default:
           $ref: '#/components/responses/GeneralError'
+  /user/informations:
+    get:
+      tags:
+        - お知らせ
+      summary: お知らせ一覧取得
+      description: お知らせ一覧を取得する
+      parameters:
+        - in : query
+          name: isPublished
+          required: false
+          schema:
+            type: boolean
+            required:
+              - isPublished
+      responses:
+        200:
+          $ref: '#/components/responses/GetUserInformations'
+        401:
+          $ref: '#/components/responses/UnauthorizedError'
+        default:
+          $ref: '#/components/responses/GeneralError'
+    post:
+      tags:
+        - お知らせ
+      summary: お知らせ既読
+      description: お知らせを既読にする
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              properties:
+                informationIDs:
+                  type: array
+                  items:
+                    type: integer
+      responses:
+        200:
+          description: OK
+        401:
+          $ref: '#/components/responses/UnauthorizedError'
+        default:
+          $ref: '#/components/responses/GeneralError'
   /admin/informations:
     get:
       tags:
@@ -627,6 +670,14 @@ components:
             type: array
             items:
               $ref: '#/components/schemas/Information'
+    GetUserInformations:
+      description: お知らせ一覧取得
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: '#/components/schemas/UserInformation'
   schemas:
     UserAccount:
       type: object
@@ -843,6 +894,23 @@ components:
         content:
           type: string
         isPublished:
+          type: boolean
+        category:
+          type: string
+          enum:
+            - bug_report
+            - feature_request
+            - other
+    UserInformation:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        content:
+          type: string
+        isRead:
           type: boolean
         category:
           type: string

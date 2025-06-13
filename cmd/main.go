@@ -96,6 +96,8 @@ func main() {
 	createInformationUsecase := usecase.NewCreateInformationUsecase(informationRepository)
 	fetchInformationUsecase := usecase.NewFetchInformationUsecase(informationRepository)
 	publishInformationUsecase := usecase.NewPublishInformationUsecase(informationRepository, userInformationRepository, userAccountService)
+	fetchUserInformationUsecase := usecase.NewFetchUserInformationUsecase(userInformationRepository)
+
 	// ハンドラーの初期化
 	kaimemoHandler := handler.NewKaimemoHandler(kaimemoService, shoppingUsecase)
 	lineAuthHandler := handler.NewLineAuthHandler(lineAuthService, appConfig)
@@ -104,6 +106,8 @@ func main() {
 	createInformationHandler := handler.NewCreateInformationHandler(createInformationUsecase)
 	fetchInformationHandler := handler.NewFetchInformationsHandler(fetchInformationUsecase)
 	publishInformationHandler := handler.NewPublishInformationHandler(publishInformationUsecase)
+	fetchUserInformationHandler := handler.NewFetchUserInformationHandler(fetchUserInformationUsecase)
+	updateReadUserInformationHandler := handler.NewUpdateReadUserInformationHandler(userInformationRepository)
 	e.GET("/health", func(c echo.Context) error {
 		return c.JSON(http.StatusOK, map[string]string{
 			"status": "ok",
@@ -153,6 +157,10 @@ func main() {
 	admin.PUT("/informations/:id", handler.NewPutInformationHandler().Handle)
 
 	admin.POST("/informations/:id/publish", publishInformationHandler.Handle)
+
+	user := e.Group("/user", middleware.AuthMiddleware(sessionManager, userAccountRepository))
+	user.GET("/informations", fetchUserInformationHandler.Handle)
+	user.POST("/informations", updateReadUserInformationHandler.Handle)
 
 	// サーバーの起動
 	e.Logger.Fatal(e.Start(fmt.Sprintf(":%s", appConfig.Port)))
