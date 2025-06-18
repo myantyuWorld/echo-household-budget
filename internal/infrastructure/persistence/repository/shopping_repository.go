@@ -59,7 +59,7 @@ func (s *shoppingRepository) DeleteShoppingMemo(id domainmodel.ShoppingID) error
 		},
 	}
 
-	if err := s.db.Delete(&model).Error; err != nil {
+	if err := s.db.Model(&model).Update("is_completed", true).Error; err != nil {
 		return err
 	}
 	return nil
@@ -68,8 +68,7 @@ func (s *shoppingRepository) DeleteShoppingMemo(id domainmodel.ShoppingID) error
 // FetchShoppingMemoItem implements domainmodel.ShoppingRepository.
 func (s *shoppingRepository) FetchShoppingMemoItem(householdID domainmodel.HouseHoldID) ([]*domainmodel.ShoppingMemo, error) {
 	model := []models.ShoppingMemo{}
-	// TODO : カテゴリ名も取得する
-	if err := s.db.Debug().Where("household_book_id = ?", householdID).Preload("Category").Find(&model).Error; err != nil {
+	if err := s.db.Debug().Where("household_book_id = ? AND is_completed = ?", householdID, false).Preload("Category").Find(&model).Error; err != nil {
 		return nil, err
 	}
 
