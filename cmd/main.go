@@ -71,6 +71,7 @@ func main() {
 	receiptAnalyzeRepository := repository.NewReceiptRepository(db)
 	informationRepository := repository.NewInformationRepository(db)
 	userInformationRepository := repository.NewUserInformationRepository(db)
+	chatMessageRepository := repository.NewChatMessageRepository(db)
 	cfg, err := awsconfig.LoadDefaultConfig(context.Background(),
 		awsconfig.WithRegion(appConfig.S3Config.Region),
 		awsconfig.WithCredentialsProvider(aws.NewCredentialsCache(credentials.NewStaticCredentialsProvider(
@@ -97,6 +98,8 @@ func main() {
 	fetchInformationUsecase := usecase.NewFetchInformationUsecase(informationRepository)
 	publishInformationUsecase := usecase.NewPublishInformationUsecase(informationRepository, userInformationRepository, userAccountService)
 	fetchUserInformationUsecase := usecase.NewFetchUserInformationUsecase(userInformationRepository)
+	registerChatMessageUsecase := usecase.NewRegisterChatMessageUsecase(chatMessageRepository)
+	fetchChatMessageUsecase := usecase.NewFetchChatMessageUsecase(chatMessageRepository)
 
 	// ハンドラーの初期化
 	kaimemoHandler := handler.NewKaimemoHandler(kaimemoService, shoppingUsecase)
@@ -108,6 +111,8 @@ func main() {
 	publishInformationHandler := handler.NewPublishInformationHandler(publishInformationUsecase)
 	fetchUserInformationHandler := handler.NewFetchUserInformationHandler(fetchUserInformationUsecase)
 	updateReadUserInformationHandler := handler.NewUpdateReadUserInformationHandler(userInformationRepository)
+	fetchChatMessagesHandler := handler.NewFetchChatMessagesHandler()
+	chatMessageTelegraphHandler := handler.NewChatMessageTelegraphHandler(registerChatMessageUsecase, fetchChatMessageUsecase)
 	e.GET("/health", func(c echo.Context) error {
 		return c.JSON(http.StatusOK, map[string]string{
 			"status": "ok",
@@ -162,6 +167,12 @@ func main() {
 	user.GET("/informations", fetchUserInformationHandler.Handle)
 	user.POST("/informations", updateReadUserInformationHandler.Handle)
 
+	chat := e.Group("/chat", middleware.AuthMiddleware(sessionManager, userAccountRepository))
+	chat.GET("/messages", fetchChatMessagesHandler.Handle)
+	chat.GET("/messages/ws", chatMessageTelegraphHandler.WebSocketChat)
+
+	// WebSocketエンドポイントは認証なしでテスト
+	// e.GET("/chat/messages/ws", chatMessageTelegraphHandler.WebSocketChat)
 	// サーバーの起動
 	e.Logger.Fatal(e.Start(fmt.Sprintf(":%s", appConfig.Port)))
 }

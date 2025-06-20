@@ -10,8 +10,8 @@
 package mock
 
 import (
-	reflect "reflect"
 	model "echo-household-budget/internal/model"
+	reflect "reflect"
 
 	gomock "go.uber.org/mock/gomock"
 )

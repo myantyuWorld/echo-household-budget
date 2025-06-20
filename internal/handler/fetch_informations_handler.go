@@ -4,7 +4,6 @@ import (
 	"echo-household-budget/internal/usecase"
 	"net/http"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/labstack/echo/v4"
 )
 
@@ -32,8 +31,6 @@ func (f *fetchInformationsHandler) Handle(c echo.Context) error {
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
 	}
-
-	spew.Dump(output)
 
 	response := f.makeOutput(output)
 	return c.JSON(http.StatusOK, response)
