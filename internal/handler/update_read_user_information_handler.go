@@ -13,12 +13,16 @@ type (
 		InformationIDs []int `json:"informationIDs"`
 	}
 
+	UpdateReadUserInformationHandler interface {
+		Handle(c echo.Context) error
+	}
+
 	updateReadUserInformationHandler struct {
 		userInformationRepository repository.UserInformationRepository
 	}
 )
 
-func NewUpdateReadUserInformationHandler(userInformationRepository repository.UserInformationRepository) *updateReadUserInformationHandler {
+func NewUpdateReadUserInformationHandler(userInformationRepository repository.UserInformationRepository) UpdateReadUserInformationHandler {
 	return &updateReadUserInformationHandler{
 		userInformationRepository: userInformationRepository,
 	}

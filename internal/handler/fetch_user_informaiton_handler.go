@@ -5,7 +5,6 @@ import (
 	"echo-household-budget/internal/usecase"
 	"net/http"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/labstack/echo/v4"
 )
 
@@ -45,8 +44,6 @@ func (h *fetchUserInformationHandler) Handle(c echo.Context) error {
 	informations, err := h.fetchUserInformationUsecase.Execute(usecase.FetchUserInformationInput{
 		UserID: int(user.ID),
 	})
-	spew.Dump(informations)
-
 	if err != nil {
 		return c.JSON(http.StatusInternalServerError, map[string]string{"error": err.Error()})
 	}

@@ -3,12 +3,13 @@ package config
 import (
 	"echo-household-budget/internal/shared/errors"
 	"fmt"
+	"log"
 	"os"
 
+	"github.com/joho/godotenv"
 	"golang.org/x/oauth2"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
-	"gorm.io/gorm/logger"
 )
 
 // Config はアプリケーションの設定を表す構造体
@@ -97,9 +98,9 @@ type AppConfig struct {
 
 func LoadConfig() *AppConfig {
 	// HACK : 本番デプロイ時には、コメントアウトすること
-	// if err := godotenv.Load(); err != nil {
-	// 	log.Printf("Warning: .env file not found")
-	// }
+	if err := godotenv.Load(); err != nil {
+		log.Printf("Warning: .env file not found")
+	}
 
 	// LINE OAuth2設定
 	lineConfig := &oauth2.Config{
@@ -162,7 +163,7 @@ func NewDBConnection(config *DatabaseConfig) (*gorm.DB, error) {
 	)
 
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
-		Logger: logger.Default.LogMode(logger.Info),
+		// Logger: logger.Default.LogMode(logger.Info),
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect database: %w", err)

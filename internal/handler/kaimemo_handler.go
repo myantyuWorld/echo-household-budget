@@ -21,11 +21,97 @@ import (
 type kaimemoHandler struct {
 	service         usecase.KaimemoService
 	shoppingUsecase usecase.ShoppingUsecase
+	wsManager       *WebSocketManager
 }
 
-var clients = make(map[*websocket.Conn]bool)
+// WebSocketMessageProcessor WebSocketメッセージを処理する構造体
+type WebSocketMessageProcessor struct {
+	shoppingUsecase usecase.ShoppingUsecase
+	wsManager       *WebSocketManager
+}
 
-// FYI. GoでWebSocketを使いチャットサーバー構築 | https://qiita.com/TetsuyaFukunaga/items/4c83a8dedd34e65ffbdc
+// NewWebSocketMessageProcessor WebSocketMessageProcessorのコンストラクタ
+func NewWebSocketMessageProcessor(shoppingUsecase usecase.ShoppingUsecase, wsManager *WebSocketManager) *WebSocketMessageProcessor {
+	return &WebSocketMessageProcessor{
+		shoppingUsecase: shoppingUsecase,
+		wsManager:       wsManager,
+	}
+}
+
+// ProcessMessage メッセージを処理
+func (p *WebSocketMessageProcessor) ProcessMessage(msg []byte, householdID uint) error {
+	var request model.TelegraphRequest
+	if err := json.Unmarshal(msg, &request); err != nil {
+		log.Println("JSONデコードエラー:", err)
+		return fmt.Errorf("JSONデコードエラー: %w", err)
+	}
+
+	log.Println("処理中のリクエスト:", request)
+	spew.Dump(request)
+
+	switch request.MethodType {
+	case model.CreateKaimemo:
+		return p.handleCreateShopping(request, householdID)
+	case model.RemoveKaimemo:
+		return p.handleDeleteShopping(request)
+	default:
+		return fmt.Errorf("未対応のメソッドタイプ: %s", request.MethodType)
+	}
+}
+
+// handleCreateShopping 買い物メモの作成を処理
+func (p *WebSocketMessageProcessor) handleCreateShopping(request model.TelegraphRequest, householdID uint) error {
+	if request.HouseholdBookID == nil || request.Tag == nil || request.Name == nil {
+		return fmt.Errorf("必須パラメータが不足しています")
+	}
+
+	shopping := domainmodel.NewShoppingMemo(
+		domainmodel.HouseHoldID(*request.HouseholdBookID),
+		domainmodel.CategoryID(*request.Tag),
+		*request.Name,
+		"",
+	)
+
+	if err := p.shoppingUsecase.CreateShopping(shopping); err != nil {
+		log.Printf("買い物メモ作成エラー: %v", err)
+		return fmt.Errorf("買い物メモの作成に失敗しました: %w", err)
+	}
+
+	return nil
+}
+
+// handleDeleteShopping 買い物メモの削除を処理
+func (p *WebSocketMessageProcessor) handleDeleteShopping(request model.TelegraphRequest) error {
+	if request.ID == nil {
+		return fmt.Errorf("削除対象のIDが指定されていません")
+	}
+
+	if err := p.shoppingUsecase.DeleteShopping(domainmodel.ShoppingID(*request.ID)); err != nil {
+		log.Printf("買い物メモ削除エラー: %v", err)
+		return fmt.Errorf("買い物メモの削除に失敗しました: %w", err)
+	}
+
+	return nil
+}
+
+// broadcastUpdatedData 更新されたデータを全クライアントにブロードキャスト
+func (p *WebSocketMessageProcessor) broadcastUpdatedData(householdID uint) error {
+	res, err := p.shoppingUsecase.FetchShopping(domainmodel.HouseHoldID(householdID))
+	if err != nil {
+		log.Printf("データ取得エラー: %v", err)
+		return fmt.Errorf("データの取得に失敗しました: %w", err)
+	}
+
+	resJSON, err := json.Marshal(res)
+	if err != nil {
+		log.Printf("JSONマーシャリングエラー: %v", err)
+		return fmt.Errorf("JSONマーシャリングに失敗しました: %w", err)
+	}
+
+	p.wsManager.BroadcastToAll(resJSON)
+	return nil
+}
+
 // WebsocketTelegraph implements KaimemoHandler.
 func (k *kaimemoHandler) WebsocketTelegraph(c echo.Context) error {
 	tempUserID := c.QueryParam("tempUserID")
@@ -35,17 +121,6 @@ func (k *kaimemoHandler) WebsocketTelegraph(c echo.Context) error {
 		})
 	}
 
-	var upgrader = websocket.Upgrader{
-		CheckOrigin: func(r *http.Request) bool { return true },
-	}
-
-	conn, err := upgrader.Upgrade(c.Response(), c.Request(), nil)
-	if err != nil {
-		return err
-	}
-	clients[conn] = true
-	defer conn.Close()
-
 	tempUserIDUint, err := strconv.ParseUint(tempUserID, 10, 32)
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, map[string]string{
@@ -53,77 +128,76 @@ func (k *kaimemoHandler) WebsocketTelegraph(c echo.Context) error {
 		})
 	}
 
-	res, err := k.shoppingUsecase.FetchShopping(domainmodel.HouseHoldID(uint(tempUserIDUint)))
-	fmt.Println("res, err := k.shoppingUsecase.FetchShopping(domainmodel.HouseHoldID(uint(tempUserIDUint)))")
+	// WebSocket接続の確立
+	upgrader := websocket.Upgrader{
+		CheckOrigin: func(r *http.Request) bool { return true },
+	}
+
+	conn, err := upgrader.Upgrade(c.Response(), c.Request(), nil)
+	if err != nil {
+		return fmt.Errorf("WebSocket接続の確立に失敗しました: %w", err)
+	}
+
+	// クライアントを管理に追加
+	k.wsManager.AddClient(conn)
+	defer k.wsManager.RemoveClient(conn)
+
+	// 初期データの送信
+	if err := k.sendInitialData(conn, uint(tempUserIDUint)); err != nil {
+		log.Printf("初期データ送信エラー: %v", err)
+		return err
+	}
+
+	// メッセージプロセッサーの初期化
+	processor := NewWebSocketMessageProcessor(k.shoppingUsecase, k.wsManager)
+
+	// メッセージループ
+	return k.handleMessageLoop(conn, processor, uint(tempUserIDUint))
+}
+
+// sendInitialData 初期データを送信
+func (k *kaimemoHandler) sendInitialData(conn *websocket.Conn, householdID uint) error {
+	res, err := k.shoppingUsecase.FetchShopping(domainmodel.HouseHoldID(householdID))
+	if err != nil {
+		return fmt.Errorf("初期データの取得に失敗しました: %w", err)
+	}
+
+	log.Println("初期データを送信:", res)
 	spew.Dump(res)
 
+	resJSON, err := json.Marshal(res)
 	if err != nil {
-		return c.JSON(http.StatusInternalServerError, map[string]string{
-			"error": "Failed to fetch kaimemo",
-		})
+		return fmt.Errorf("初期データのJSONマーシャリングに失敗しました: %w", err)
 	}
-	resJSON, _ := json.Marshal(res)
-	conn.WriteMessage(websocket.TextMessage, resJSON)
 
+	return conn.WriteMessage(websocket.TextMessage, resJSON)
+}
+
+// handleMessageLoop メッセージループを処理
+func (k *kaimemoHandler) handleMessageLoop(conn *websocket.Conn, processor *WebSocketMessageProcessor, householdID uint) error {
 	for {
 		_, msg, err := conn.ReadMessage()
 		if err != nil {
-			log.Println("読み取りエラー:", err)
+			log.Println("メッセージ読み取りエラー:", err)
 			break
 		}
-		fmt.Println("msg", msg)
 
-		// TODO : 処理区分を渡して、それに応じて登録・削除を分ける必要がある
-		var request model.TelegraphRequest
-		if err := json.Unmarshal(msg, &request); err != nil {
-			log.Println("JSONデコードエラー:", err)
+		log.Println("受信メッセージ:", string(msg))
+
+		// メッセージの処理
+		if err := processor.ProcessMessage(msg, householdID); err != nil {
+			log.Printf("メッセージ処理エラー: %v", err)
+			// エラーが発生しても他のクライアントには影響させない
 			continue
 		}
-		fmt.Println("request", request)
-		spew.Dump(request)
 
-		if request.MethodType == "1" {
-			shopping := domainmodel.NewShoppingMemo(domainmodel.HouseHoldID(*request.HouseholdBookID), domainmodel.CategoryID(*request.Tag), *request.Name, "")
-
-			if err := k.shoppingUsecase.CreateShopping(shopping); err != nil {
-				fmt.Println("err", err)
-				return c.JSON(http.StatusInternalServerError, map[string]string{
-					"error": "Failed to create shopping",
-				})
-			}
-
-		} else if request.MethodType == "2" {
-			// TODO : shoppingUsecaseで削除する
-			if err := k.shoppingUsecase.DeleteShopping(domainmodel.ShoppingID(*request.ID)); err != nil {
-				return c.JSON(http.StatusInternalServerError, map[string]string{
-					"error": "Failed to delete shopping",
-				})
-			}
-
-			// if err := k.service.RemoveKaimemo(*request.ID, tempUserID); err != nil {
-			// 	return c.JSON(http.StatusInternalServerError, map[string]string{
-			// 		"error": "Failed to remove kaimemo",
-			// 	})
-			// }
-		}
-
-		res, err := k.shoppingUsecase.FetchShopping(domainmodel.HouseHoldID(tempUserIDUint))
-		if err != nil {
-			return c.JSON(http.StatusInternalServerError, map[string]string{
-				"error": "Failed to fetch shopping",
-			})
-		}
-		resJSON, _ := json.Marshal(res)
-
-		// 全クライアントにメッセージをブロードキャスト
-		for client := range clients {
-			if err := client.WriteMessage(websocket.TextMessage, resJSON); err != nil {
-				log.Printf("ブロードキャストエラー: %v", err)
-				delete(clients, client)
-				client.Close()
-			}
+		// 更新されたデータをブロードキャスト
+		if err := processor.broadcastUpdatedData(householdID); err != nil {
+			log.Printf("ブロードキャストエラー: %v", err)
+			// エラーが発生しても接続は維持
 		}
 	}
+
 	return nil
 }
 
@@ -271,5 +345,5 @@ type KaimemoHandler interface {
 }
 
 func NewKaimemoHandler(service usecase.KaimemoService, shoppingUsecase usecase.ShoppingUsecase) KaimemoHandler {
-	return &kaimemoHandler{service: service, shoppingUsecase: shoppingUsecase}
+	return &kaimemoHandler{service: service, shoppingUsecase: shoppingUsecase, wsManager: GetWebSocketManager()}
 }

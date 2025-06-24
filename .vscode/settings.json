@@ -22,5 +22,16 @@
   "cSpell.words": [
     "Kaimemo",
     "notionapi"
-  ]
+  ],
+  "go.gocodeAutoBuild": "onSave",
+  "editor.formatOnSave": true,
+    "gopls": {
+      "formatting.gofumpt": false,
+      "ui.completion.usePlaceholders": true
+    },
+    "[go]": {
+      "editor.formatOnSave": true,
+      "editor.defaultFormatter": "golang.go"
+  },
+  "go.formatTool": "goimports"
 }

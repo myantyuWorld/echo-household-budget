@@ -7,7 +7,7 @@ type ErrorCode string
 
 const (
 	// エラーコードの定義
-	ErrorCodeInvalidInput     ErrorCode = "INVALID_INPUT"
+	ErrorCodeInvalidInput    ErrorCode = "INVALID_INPUT"
 	ErrorCodeNotFound        ErrorCode = "NOT_FOUND"
 	ErrorCodeUnauthorized    ErrorCode = "UNAUTHORIZED"
 	ErrorCodeInternalError   ErrorCode = "INTERNAL_ERROR"
@@ -49,4 +49,4 @@ func IsAppError(err error) bool {
 func GetAppError(err error) (*AppError, bool) {
 	appErr, ok := err.(*AppError)
 	return appErr, ok
-} 
+}
