@@ -25,7 +25,7 @@ type (
 		Offset      int                            `json:"offset" query:"offset"` // デバッグ用
 	}
 
-	WebSocketChatMessage struct {
+	ChatMessageTelegraphResponse struct {
 		ID          int    `json:"id"`
 		UserID      int    `json:"user_id"`
 		UserName    string `json:"user_name"`
@@ -35,7 +35,6 @@ type (
 	}
 
 	ChatMessageTelegraphHandler interface {
-		Handle(c echo.Context) error
 		WebSocketChat(c echo.Context) error
 	}
 
@@ -60,60 +59,77 @@ func NewChatMessageTelegraphHandler(registerChatMessageUsecase usecase.RegisterC
 	}
 }
 
-// Handle 通常のHTTPリクエストを処理
-func (h *chatMessageTelegraphHandler) Handle(c echo.Context) error {
-	// 通常のHTTPリクエスト処理（必要に応じて実装）
-	return c.JSON(http.StatusOK, map[string]string{
-		"message": "Chat message telegraph handler",
-	})
-}
-
 // WebSocketChat WebSocketを使用したチャット機能
 func (h *chatMessageTelegraphHandler) WebSocketChat(c echo.Context) error {
-	fmt.Println("=== WebSocketChat メソッドが呼ばれました ===")
-	fmt.Println("リクエストURL:", c.Request().URL.String())
-	fmt.Println("リクエストメソッド:", c.Request().Method)
-	fmt.Println("リクエストヘッダー:", c.Request().Header)
+	// パラメータの検証
+	householdID, userID, err := h.validateWebSocketRequest(c)
+	if err != nil {
+		return err
+	}
 
+	// WebSocket接続の確立
+	conn, err := h.establishWebSocketConnection(c)
+	if err != nil {
+		return err
+	}
+	defer h.wsManager.RemoveClient(conn)
+
+	// クライアントを管理に追加
+	h.wsManager.AddClient(conn)
+
+	// 初期化処理
+	if err := h.initializeChatSession(conn, householdID, userID); err != nil {
+		return err
+	}
+
+	// メッセージループを開始
+	return h.handleChatMessageLoop(conn, strconv.Itoa(householdID), userID)
+}
+
+// validateWebSocketRequest WebSocketリクエストのパラメータを検証する
+func (h *chatMessageTelegraphHandler) validateWebSocketRequest(c echo.Context) (int, int, error) {
 	householdID := c.QueryParam("householdID")
-	fmt.Println("householdID:", householdID)
 	if householdID == "" {
-		fmt.Println("householdIDが空です")
-		return c.JSON(http.StatusBadRequest, map[string]string{
+		return 0, 0, c.JSON(http.StatusBadRequest, map[string]string{
 			"error": "householdID is required",
 		})
 	}
 
 	user, ok := middleware.GetUserFromContext(c.Request().Context())
 	if !ok {
-		return c.JSON(http.StatusUnauthorized, map[string]string{"error": "unauthorized"})
+		return 0, 0, c.JSON(http.StatusUnauthorized, map[string]string{"error": "unauthorized"})
 	}
 
-	userID := int(user.ID)
-	fmt.Println("userID:", userID)
+	householdIDInt, err := strconv.Atoi(householdID)
+	if err != nil {
+		return 0, 0, c.JSON(http.StatusBadRequest, map[string]string{
+			"error": "invalid householdID format",
+		})
+	}
 
-	// WebSocket接続の確立
+	return householdIDInt, int(user.ID), nil
+}
+
+// establishWebSocketConnection WebSocket接続を確立する
+func (h *chatMessageTelegraphHandler) establishWebSocketConnection(c echo.Context) (*websocket.Conn, error) {
 	upgrader := websocket.Upgrader{
 		CheckOrigin: func(r *http.Request) bool {
-			fmt.Println("CheckOrigin呼ばれました:", r.Header.Get("Origin"))
 			return true
 		},
 	}
 
-	fmt.Println("WebSocket接続をアップグレード中...")
 	conn, err := upgrader.Upgrade(c.Response(), c.Request(), nil)
 	if err != nil {
-		fmt.Println("WebSocket接続エラー:", err)
-		return fmt.Errorf("WebSocket接続の確立に失敗しました: %w", err)
+		return nil, fmt.Errorf("WebSocket接続の確立に失敗しました: %w", err)
 	}
-	fmt.Println("WebSocket接続が確立されました")
 
-	// クライアントを管理に追加
-	h.wsManager.AddClient(conn)
-	defer h.wsManager.RemoveClient(conn)
+	return conn, nil
+}
 
+// initializeChatSession チャットセッションを初期化する
+func (h *chatMessageTelegraphHandler) initializeChatSession(conn *websocket.Conn, householdID, userID int) error {
 	// 接続確認メッセージを送信
-	welcomeMsg := WebSocketChatMessage{
+	welcomeMsg := ChatMessageTelegraphResponse{
 		ID:          1,
 		UserID:      1,
 		UserName:    "システム",
@@ -122,34 +138,27 @@ func (h *chatMessageTelegraphHandler) WebSocketChat(c echo.Context) error {
 		CreatedAt:   time.Now().Format(time.RFC3339),
 	}
 
-	welcomeJSON, _ := json.Marshal(welcomeMsg)
-	fmt.Println("ウェルカムメッセージを送信:", string(welcomeJSON))
-	conn.WriteMessage(websocket.TextMessage, welcomeJSON)
-
-	householdIDInt, err := strconv.Atoi(householdID)
+	welcomeJSON, err := json.Marshal(welcomeMsg)
 	if err != nil {
-		fmt.Println("householdIDの変換エラー:", err)
-		return c.JSON(http.StatusBadRequest, map[string]string{
-			"error": "invalid householdID format",
-		})
+		return fmt.Errorf("ウェルカムメッセージのマーシャリングに失敗しました: %w", err)
 	}
 
+	if err := conn.WriteMessage(websocket.TextMessage, welcomeJSON); err != nil {
+		return fmt.Errorf("ウェルカムメッセージの送信に失敗しました: %w", err)
+	}
+
+	// 既存のチャットメッセージを取得
 	err = h.fetchChatMessage(ChatMessageTelegraphRequest{
 		MethodType:  ChatMessageTelegraphMethodTypeFetch,
-		HouseholdID: householdIDInt,
+		HouseholdID: householdID,
 		Limit:       10,
 		Offset:      0,
 	}, userID)
 	if err != nil {
-		fmt.Println("チャットメッセージ取得エラー:", err)
-		return c.JSON(http.StatusInternalServerError, map[string]string{
-			"error": "failed to fetch chat messages",
-		})
+		return fmt.Errorf("チャットメッセージの取得に失敗しました: %w", err)
 	}
 
-	// メッセージループ
-	fmt.Println("メッセージループを開始します")
-	return h.handleChatMessageLoop(conn, householdID, userID)
+	return nil
 }
 
 // handleChatMessageLoop チャットメッセージループを処理
@@ -209,7 +218,7 @@ func (h *chatMessageTelegraphHandler) fetchChatMessage(request ChatMessageTelegr
 	}
 
 	for _, chatMessage := range fetchChatMessageOutput.ChatMessages {
-		chatmessage := WebSocketChatMessage{
+		chatmessage := ChatMessageTelegraphResponse{
 			ID:          chatMessage.ID,
 			UserID:      chatMessage.UserID,
 			UserName:    chatMessage.User.Name,
@@ -242,7 +251,7 @@ func (h *chatMessageTelegraphHandler) registerChatMessage(request ChatMessageTel
 		return fmt.Errorf("チャットメッセージ登録エラー: %w", err)
 	}
 
-	chatMessage := WebSocketChatMessage{
+	chatMessage := ChatMessageTelegraphResponse{
 		ID:          aiChatReplyMessage.ID,
 		UserID:      aiChatReplyMessage.UserID,
 		UserName:    "AI",

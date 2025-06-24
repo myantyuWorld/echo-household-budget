@@ -103,6 +103,5 @@ func setupRoutes(e *echo.Echo, deps *setup.Dependencies) {
 
 	// チャット関連のエンドポイント
 	chat := e.Group("/chat", middleware.AuthMiddleware(deps.SessionManager, deps.UserAccountRepository))
-	chat.GET("/messages", deps.FetchChatMessagesHandler.Handle)
 	chat.GET("/messages/ws", deps.ChatMessageTelegraphHandler.WebSocketChat)
 }
