@@ -1,5 +1,7 @@
 package domainmodel
 
+import "time"
+
 const (
 	ChatMessageTypeUser ChatMessageType = "user"
 	ChatMessageTypeAI   ChatMessageType = "ai"
@@ -11,6 +13,7 @@ type ChatMessage struct {
 	UserID      int
 	MessageType ChatMessageType
 	Content     string
+	CreatedAt   time.Time
 	User        *UserAccount
 }
 
@@ -22,6 +25,7 @@ func NewChatMessage(householdID int, userID int, content string) *ChatMessage {
 		UserID:      userID,
 		MessageType: ChatMessageTypeUser,
 		Content:     content,
+		CreatedAt:   time.Now(),
 	}
 }
 
@@ -30,6 +34,7 @@ func NewAIChatReplyMessage(householdID int) *ChatMessage {
 		HouseholdID: householdID,
 		UserID:      0,
 		MessageType: ChatMessageTypeAI,
-		Content:     "受け付けました、解析中です🤖",
+		Content:     "AIサービスで受け付けました、解析中です🤖(現在、実装中です)",
+		CreatedAt:   time.Now(),
 	}
 }

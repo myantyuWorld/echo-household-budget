@@ -224,7 +224,7 @@ func (h *chatMessageTelegraphHandler) fetchChatMessage(request ChatMessageTelegr
 			UserName:    chatMessage.User.Name,
 			Content:     chatMessage.Content,
 			MessageType: string(chatMessage.MessageType),
-			CreatedAt:   time.Now().Format(time.RFC3339),
+			CreatedAt:   chatMessage.CreatedAt.Format(time.RFC3339),
 		}
 
 		messageJSON, err := json.Marshal(chatmessage)
@@ -257,7 +257,7 @@ func (h *chatMessageTelegraphHandler) registerChatMessage(request ChatMessageTel
 		UserName:    "AI",
 		Content:     aiChatReplyMessage.Content,
 		MessageType: string(aiChatReplyMessage.MessageType),
-		CreatedAt:   time.Now().Format(time.RFC3339),
+		CreatedAt:   aiChatReplyMessage.CreatedAt.Format(time.RFC3339),
 	}
 
 	// メッセージをJSONに変換

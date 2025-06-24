@@ -1,5 +1,7 @@
 package models
 
+import "time"
+
 type ChatMessage struct {
 	ID          int
 	HouseholdID int
@@ -7,6 +9,7 @@ type ChatMessage struct {
 	MessageType string
 	Content     string
 	User        UserAccount
+	CreatedAt   time.Time
 }
 
 func (m *ChatMessage) TableName() string {

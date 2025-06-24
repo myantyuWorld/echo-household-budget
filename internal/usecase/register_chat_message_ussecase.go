@@ -37,6 +37,9 @@ func (u *registerChatMessageUsecase) Execute(request RegisterChatMessageInput) (
 	// TODO : メッセージをAIサービスに送信して、返答を受け取る
 
 	aiChatReplyMessage := domainmodel.NewAIChatReplyMessage(request.HouseholdID)
+	if err := u.chatMessageRepository.Create(aiChatReplyMessage); err != nil {
+		return nil, err
+	}
 
 	return aiChatReplyMessage, nil
 }

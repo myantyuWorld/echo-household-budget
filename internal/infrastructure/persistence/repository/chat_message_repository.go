@@ -13,13 +13,17 @@ type chatMessageRepository struct {
 	db *gorm.DB
 }
 
+func NewChatMessageRepository(db *gorm.DB) repository.ChatMessageRepository {
+	return &chatMessageRepository{db: db}
+}
+
 // FindByHouseholdID implements repository.ChatMessageRepository.
 func (r *chatMessageRepository) FindByHouseholdID(householdID int, limit int, offset int) ([]*domainmodel.ChatMessage, error) {
 	chatMessages := []*models.ChatMessage{}
 
 	if err := r.db.
 		Where("household_id = ?", householdID).
-		Order("created_at DESC").
+		Order("created_at ASC").
 		Offset(offset).
 		Limit(limit).
 		Preload("User").
@@ -35,6 +39,7 @@ func (r *chatMessageRepository) FindByHouseholdID(householdID int, limit int, of
 			UserID:      chatMessage.UserID,
 			MessageType: domainmodel.ChatMessageType(chatMessage.MessageType),
 			Content:     chatMessage.Content,
+			CreatedAt:   chatMessage.CreatedAt,
 			User: &domainmodel.UserAccount{
 				ID:   domainmodel.UserID(chatMessage.User.ID),
 				Name: chatMessage.User.Name,
@@ -43,10 +48,6 @@ func (r *chatMessageRepository) FindByHouseholdID(householdID int, limit int, of
 	}
 
 	return domainChatMessages, nil
-}
-
-func NewChatMessageRepository(db *gorm.DB) repository.ChatMessageRepository {
-	return &chatMessageRepository{db: db}
 }
 
 func (r *chatMessageRepository) Create(input *domainmodel.ChatMessage) error {
