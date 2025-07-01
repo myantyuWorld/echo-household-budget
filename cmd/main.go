@@ -47,7 +47,7 @@ func setupMiddleware(e *echo.Echo, appConfig *config.AppConfig) {
 	e.Use(echomiddleware.Recover())
 	e.Use(echomiddleware.CORSWithConfig(echomiddleware.CORSConfig{
 		AllowOrigins:     appConfig.AllowOrigins,
-		AllowMethods:     []string{http.MethodGet, http.MethodPost, http.MethodDelete},
+		AllowMethods:     []string{http.MethodGet, http.MethodPost, http.MethodPut, http.MethodDelete},
 		AllowCredentials: true,
 	}))
 	e.Use(middleware.ErrorHandler())
@@ -73,6 +73,7 @@ func setupRoutes(e *echo.Echo, deps *setup.Dependencies) {
 	houseHold.POST("/:householdID/category", deps.HouseHoldHandler.AddHouseHoldCategory)
 	houseHold.GET("/:householdID/shopping/record", deps.HouseHoldHandler.FetchShoppingRecord)
 	houseHold.POST("/:householdID/shopping/record", deps.HouseHoldHandler.CreateShoppingRecord)
+	houseHold.PUT("/:householdID/shopping/record/:shoppingID", deps.HouseHoldHandler.UpdateShoppingRecord)
 	houseHold.DELETE("/:householdID/shopping/record/:shoppingID", deps.HouseHoldHandler.RemoveShoppingRecord)
 
 	// LINE認証関連のエンドポイント
