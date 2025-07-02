@@ -25,5 +25,9 @@ AI運用5原則
 ## migrationについて
 sql-migrate、を使用しています
 
+## config.goについて
+コミットはしないでください。
+いかなる変更も禁止とします
+
 <memories>
 </memories>
