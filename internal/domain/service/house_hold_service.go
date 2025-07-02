@@ -14,6 +14,7 @@ type HouseHoldService interface {
 	AddUserHouseHold(houseHold *domainmodel.HouseHold) error
 	AddHouseHoldCategory(houseHoldID domainmodel.HouseHoldID, categoryName string, categoryLimitAmount int) error
 	CreateShoppingAmount(shoppingAmount *domainmodel.ShoppingAmount) error
+	UpdateShoppingAmount(shoppingAmount *domainmodel.ShoppingAmount) error
 	RemoveShoppingAmount(shoppingAmountID domainmodel.ShoppingID) error
 	SummarizeShoppingAmount(input FetchShoppingRecordInput) (*domainmodel.SummarizeShoppingAmounts, error)
 }
@@ -102,6 +103,23 @@ func (h *houseHoldService) CreateShoppingAmount(shoppingAmount *domainmodel.Shop
 	}
 
 	return h.shoppingRepository.RegisterShoppingAmount(model)
+}
+
+// UpdateShoppingAmount implements HouseHoldService.
+func (h *houseHoldService) UpdateShoppingAmount(shoppingAmount *domainmodel.ShoppingAmount) error {
+	date, err := time.Parse("2006-01-02", shoppingAmount.Date)
+	if err != nil {
+		return errors.New("domainservice::UpdateShoppingAmount failed to parse date")
+	}
+	model := &models.ShoppingAmount{
+		Base:            models.Base{ID: uint(shoppingAmount.ID)},
+		CategoryID:      uint(shoppingAmount.CategoryID),
+		Amount:          shoppingAmount.Amount,
+		Date:            date,
+		Memo:            shoppingAmount.Memo,
+	}
+
+	return h.shoppingRepository.UpdateShoppingAmount(model)
 }
 
 // FetchShoppingAmount implements HouseHoldService.

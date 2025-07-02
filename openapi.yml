@@ -352,6 +352,50 @@ paths:
         default:
           $ref: '#/components/responses/GeneralError'
   /household/{householdID}/shopping/record/{shoppingID}:
+    put:
+      tags:
+        - 買い物記録
+      summary: 買い物記録更新
+      description: 買い物記録を更新する
+      parameters:
+        - name: householdID
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: shoppingID
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              properties:
+                categoryID:
+                  type: integer
+                amount:
+                  type: integer
+                date:
+                  type: string
+                  format: date
+                memo:
+                  type: string
+              required:
+                - categoryID
+                - amount
+                - date
+      responses:
+        200:
+          description: OK
+        401:
+          $ref: '#/components/responses/UnauthorizedError'
+        404:
+          $ref: '#/components/responses/NotFoundError'
+        default:
+          $ref: '#/components/responses/GeneralError'
     delete:
       tags:
         - 買い物記録

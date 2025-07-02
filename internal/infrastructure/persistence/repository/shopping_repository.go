@@ -98,6 +98,19 @@ func (s *shoppingRepository) RegisterShoppingAmount(shopping *models.ShoppingAmo
 	return nil
 }
 
+// UpdateShoppingAmount implements domainmodel.ShoppingRepository.
+func (s *shoppingRepository) UpdateShoppingAmount(shopping *models.ShoppingAmount) error {
+	if err := s.db.Model(shopping).Updates(map[string]interface{}{
+		"category_id": shopping.CategoryID,
+		"amount":      shopping.Amount,
+		"date":        shopping.Date,
+		"memo":        shopping.Memo,
+	}).Error; err != nil {
+		return err
+	}
+	return nil
+}
+
 // RegisterShoppingMemo implements domainmodel.ShoppingRepository.
 func (s *shoppingRepository) RegisterShoppingMemo(shopping *domainmodel.ShoppingMemo) error {
 	model := models.ShoppingMemo{

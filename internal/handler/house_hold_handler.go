@@ -24,6 +24,13 @@ type CreateShoppingRecordRequest struct {
 	Memo        string `json:"memo"`
 }
 
+type UpdateShoppingRecordRequest struct {
+	CategoryID uint   `json:"categoryID"`
+	Amount     int    `json:"amount"`
+	Date       string `json:"date"`
+	Memo       string `json:"memo"`
+}
+
 type AddHouseHoldCategoryRequest struct {
 	HouseholdID         uint   `json:"householdID" param:"householdID"`
 	CategoryName        string `json:"categoryName"`
@@ -80,6 +87,41 @@ func (h *houseHoldHandler) CreateShoppingRecord(c echo.Context) error {
 	shoppingAmount := domainmodel.NewShoppingAmount(domainmodel.HouseHoldID(req.HouseholdID), domainmodel.CategoryID(req.CategoryID), req.Amount, req.Date, req.Memo, 0)
 
 	if err := h.service.CreateShoppingAmount(shoppingAmount); err != nil {
+		return c.JSON(http.StatusInternalServerError, err.Error())
+	}
+
+	return c.JSON(http.StatusOK, "success")
+}
+
+// UpdateShoppingRecord implements HouseHoldHandler.
+func (h *houseHoldHandler) UpdateShoppingRecord(c echo.Context) error {
+	req := UpdateShoppingRecordRequest{}
+	if err := c.Bind(&req); err != nil {
+		return c.JSON(http.StatusBadRequest, err.Error())
+	}
+
+	householdID := c.Param("householdID")
+	shoppingID := c.Param("shoppingID")
+
+	_, err := strconv.ParseUint(householdID, 10, 32)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, err.Error())
+	}
+
+	shoppingIDUint, err := strconv.ParseUint(shoppingID, 10, 32)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, err.Error())
+	}
+
+	shoppingAmount := &domainmodel.ShoppingAmount{
+		ID:         domainmodel.ShoppingID(uint(shoppingIDUint)),
+		CategoryID: domainmodel.CategoryID(req.CategoryID),
+		Amount:     req.Amount,
+		Date:       req.Date,
+		Memo:       req.Memo,
+	}
+
+	if err := h.service.UpdateShoppingAmount(shoppingAmount); err != nil {
 		return c.JSON(http.StatusInternalServerError, err.Error())
 	}
 
@@ -197,6 +239,7 @@ type HouseHoldHandler interface {
 	// 買い物記録
 	FetchShoppingRecord(c echo.Context) error
 	CreateShoppingRecord(c echo.Context) error
+	UpdateShoppingRecord(c echo.Context) error
 	RemoveShoppingRecord(c echo.Context) error
 }
 
