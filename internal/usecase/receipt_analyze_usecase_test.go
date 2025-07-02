@@ -87,6 +87,11 @@ func (m *MockHouseHoldService) AddUserHouseHold(houseHold *domainmodel.HouseHold
 	return args.Error(0)
 }
 
+func (m *MockHouseHoldService) UpdateShoppingAmount(shoppingAmount *domainmodel.ShoppingAmount) error {
+	args := m.Called(shoppingAmount)
+	return args.Error(0)
+}
+
 func (m *MockHouseHoldService) AddHouseHoldCategory(houseHoldID domainmodel.HouseHoldID, categoryName string, categoryLimitAmount int) error {
 	args := m.Called(houseHoldID, categoryName, categoryLimitAmount)
 	return args.Error(0)
