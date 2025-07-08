@@ -62,11 +62,81 @@ Frontend (Vue3) → Backend (Go) → AI Service (OpenAI) → Function Tools
 
 ### 3.2 Function Calling フロー
 1. **ユーザー入力**: 自然言語での支出分析クエリ
-2. **AI判断**: 必要なFunctionの特定
+2. **AI判断**: 必要なFunctionの特定（詳細設計は3.3参照）
 3. **Function実行**: 対応するFunction Toolの呼び出し
 4. **データ取得**: データベースからの情報取得
 5. **AI分析**: 取得データの分析・予測
 6. **結果表示**: ユーザーへの回答生成
+
+### 3.3 AI判断ロジック設計
+
+#### 3.3.1 入力解析・意図分類
+OpenAI GPTが以下の手順でユーザー入力を解析：
+
+1. **自然言語解析**
+   - ユーザーの質問文を構造化
+   - キーワード抽出（「支出」「予算」「予測」等）
+   - 時間軸の特定（「今月」「先月」「月末まで」等）
+
+2. **意図分類**
+   - 支出分析：過去・現在の支出状況確認
+   - 予算管理：制限との比較・残高確認
+   - 予測分析：将来の支出予測・アラート
+   - 複合クエリ：複数の分析要求
+
+3. **パラメータ抽出**
+   - 対象期間（年月）の特定
+   - カテゴリ指定の有無
+   - 家計簿IDの取得
+
+#### 3.3.2 Function選択ロジック
+
+**単一Function選択**
+```
+例: "今月の食費はいくら？"
+→ search_monthly_expenses(category_id=1)
+
+例: "食費の予算上限は？"
+→ get_monthly_limits(category_id=1)
+```
+
+**複数Function組み合わせ**
+```
+例: "今月の支出を分析して、月末の予測を教えて"
+→ 1. search_monthly_expenses()
+→ 2. get_monthly_limits()
+→ 3. predict_monthly_expenses()
+```
+
+#### 3.3.3 システムプロンプト設計
+```
+あなたは家計管理の専門AIアシスタントです。
+
+利用可能なFunction Tools:
+- search_monthly_expenses: 月間支出データの検索・集計
+- get_monthly_limits: 予算制限の取得
+- predict_monthly_expenses: 支出予測の生成
+
+ユーザーの質問に応じて適切なToolを選択し、
+取得したデータを分析して分かりやすく説明してください。
+
+回答時の注意点:
+- 金額は必ず3桁区切りで表示
+- 予算オーバーの場合は具体的な対策を提案
+- 感情に寄り添った励ましのメッセージを含める
+```
+
+#### 3.3.4 実行順序制御
+
+**依存関係による順序決定**
+1. 基本データ取得：`search_monthly_expenses`
+2. 制限データ取得：`get_monthly_limits`
+3. 予測計算：`predict_monthly_expenses`（1,2の結果を利用）
+
+**エラー処理**
+- Function実行失敗時の代替処理
+- 部分的なデータでの分析継続
+- ユーザーへの分かりやすいエラー説明
 
 ## 4. Function Tools 設計
 
@@ -671,102 +741,19 @@ CREATE TABLE expense_predictions (
 - 日付範囲クエリの最適化
 - 集計クエリのパフォーマンス向上
 
-## 9. テスト戦略
+## 9. 運用・監視
 
-### 9.1 単体テスト
-```go
-// ドメインモデルテスト
-func TestExpensePredictor_PredictMonthlyExpenses(t *testing.T) {
-    predictor := &domain.ExpensePredictor{}
-    
-    // テストデータ準備
-    currentExpenses := []domain.ShoppingAmount{
-        {CategoryID: 1, Amount: 20000},
-        {CategoryID: 2, Amount: 5000},
-    }
-    
-    limits := []domain.CategoryLimit{
-        {Category: domain.Category{ID: 1, Name: "食費"}, LimitAmount: 40000},
-        {Category: domain.Category{ID: 2, Name: "日用品"}, LimitAmount: 10000},
-    }
-    
-    currentDate := time.Date(2024, 1, 15, 0, 0, 0, 0, time.UTC)
-    
-    // 予測実行
-    predictions := predictor.PredictMonthlyExpenses(currentExpenses, limits, currentDate)
-    
-    // 結果検証
-    assert.Len(t, predictions, 2)
-    assert.Equal(t, 42000, predictions[0].PredictedAmount) // 20000 * 31 / 15
-    assert.True(t, predictions[0].IsOverBudget)
-    assert.Equal(t, 10333, predictions[1].PredictedAmount) // 5000 * 31 / 15
-    assert.True(t, predictions[1].IsOverBudget)
-}
-
-// Handlerテスト
-func TestExpenseAnalysisHandler_SearchMonthlyExpenses(t *testing.T) {
-    // モックユースケース準備
-    mockUsecase := &mock.MockShoppingUsecase{}
-    handler := NewExpenseAnalysisHandler(mockUsecase)
-    
-    // テストデータ準備
-    summary := &domain.ExpenseSummary{
-        TotalAmount: 45000,
-        CategoryAmounts: []domain.CategoryAmount{
-            {CategoryID: 1, CategoryName: "食費", Amount: 35000, Percentage: 77.8},
-        },
-    }
-    
-    mockUsecase.On("GetMonthlyExpensesSummary", mock.Anything).Return(summary, nil)
-    
-    // リクエスト実行
-    req := httptest.NewRequest(http.MethodGet, "/api/expenses/search", nil)
-    rec := httptest.NewRecorder()
-    c := echo.New().NewContext(req, rec)
-    
-    // Handler実行
-    err := handler.SearchMonthlyExpenses(c)
-    
-    // 結果検証
-    assert.NoError(t, err)
-    assert.Equal(t, http.StatusOK, rec.Code)
-    
-    var result ExpenseSearchResult
-    json.Unmarshal(rec.Body.Bytes(), &result)
-    assert.Equal(t, 45000, result.TotalAmount)
-}
-```
-
-### 9.2 統合テスト
-```typescript
-// フロントエンド統合テスト
-describe('Function Calling Integration', () => {
-  it('should handle expense analysis request', async () => {
-    const result = await chatApi.sendMessage({
-      content: '今月の支出を分析してください',
-      householdId: 1,
-      enableFunctionCalling: true,
-    });
-    
-    expect(result.function_calls).toBeDefined();
-    expect(result.function_calls[0].function_name).toBe('search_monthly_expenses');
-  });
-});
-```
-
-## 10. 運用・監視
-
-### 10.1 ログ監視
+### 9.1 ログ監視
 - Function Call実行状況の監視
 - エラー発生率の追跡
 - 実行時間の監視
 
-### 10.2 メトリクス
+### 9.2 メトリクス
 - Function使用頻度
 - 予測精度の測定
 - ユーザー満足度の追跡
 
-## 11. 実装フェーズ
+## 10. 実装フェーズ
 
 ### Phase 1: 基盤実装
 1. Function Tools基盤の構築
