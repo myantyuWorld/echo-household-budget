@@ -105,7 +105,7 @@ Frontend (Vue3) → Backend (Go) → AI Service (OpenAI) → Function Tools
 
 #### 4.1.2 Backend実装
 ```go
-// FunctionTool handler
+// FunctionTool handler - レスポンス変換のみ担当
 func (h *ExpenseAnalysisHandler) SearchMonthlyExpenses(c echo.Context) error {
     req := SearchMonthlyExpensesRequest{
         HouseholdID: c.Get("household_id").(int),
@@ -114,21 +114,51 @@ func (h *ExpenseAnalysisHandler) SearchMonthlyExpenses(c echo.Context) error {
         CategoryID:  c.Get("category_id").(*int),
     }
     
-    // 月間支出データ取得
-    expenses, err := h.shoppingUsecase.GetMonthlyExpenses(req)
+    // ユースケースで業務処理を実行
+    summary, err := h.shoppingUsecase.GetMonthlyExpensesSummary(req)
     if err != nil {
         return err
     }
     
-    // カテゴリ別集計
-    summary := h.aggregateByCategory(expenses)
+    // レスポンス構造体への変換
+    response := h.toExpenseSearchResponse(summary)
     
-    return c.JSON(http.StatusOK, ExpenseSearchResult{
+    return c.JSON(http.StatusOK, response)
+}
+
+// レスポンス変換ロジック
+func (h *ExpenseAnalysisHandler) toExpenseSearchResponse(summary *domain.ExpenseSummary) ExpenseSearchResult {
+    return ExpenseSearchResult{
         TotalAmount:     summary.TotalAmount,
-        CategoryAmounts: summary.CategoryAmounts,
-        DailyExpenses:   summary.DailyExpenses,
-        Period:          fmt.Sprintf("%d年%d月", req.Year, req.Month),
-    })
+        CategoryAmounts: h.toCategoryAmountResponses(summary.CategoryAmounts),
+        DailyExpenses:   h.toDailyExpenseResponses(summary.DailyExpenses),
+        Period:          summary.Period,
+    }
+}
+
+func (h *ExpenseAnalysisHandler) toCategoryAmountResponses(amounts []domain.CategoryAmount) []CategoryAmountResponse {
+    responses := make([]CategoryAmountResponse, 0, len(amounts))
+    for _, amount := range amounts {
+        responses = append(responses, CategoryAmountResponse{
+            CategoryID:   amount.CategoryID,
+            CategoryName: amount.CategoryName,
+            Amount:       amount.Amount,
+            Percentage:   amount.Percentage,
+        })
+    }
+    return responses
+}
+
+func (h *ExpenseAnalysisHandler) toDailyExpenseResponses(expenses []domain.DailyExpense) []DailyExpenseResponse {
+    responses := make([]DailyExpenseResponse, 0, len(expenses))
+    for _, expense := range expenses {
+        responses = append(responses, DailyExpenseResponse{
+            Date:         expense.Date,
+            Amount:       expense.Amount,
+            CategoryName: expense.CategoryName,
+        })
+    }
+    return responses
 }
 ```
 
@@ -189,30 +219,39 @@ func (h *ExpenseAnalysisHandler) SearchMonthlyExpenses(c echo.Context) error {
 #### 4.2.2 Backend実装
 ```go
 func (h *ExpenseAnalysisHandler) GetMonthlyLimits(c echo.Context) error {
-    householdID := c.Get("household_id").(int)
-    categoryID := c.Get("category_id").(*int)
+    req := MonthlyLimitsRequest{
+        HouseholdID: c.Get("household_id").(int),
+        CategoryID:  c.Get("category_id").(*int),
+    }
     
-    household, err := h.householdUsecase.GetHousehold(householdID)
+    // ユースケースで業務処理を実行
+    limits, err := h.householdUsecase.GetCategoryLimits(req)
     if err != nil {
         return err
     }
     
-    limits := []CategoryLimitResult{}
-    for _, limit := range household.CategoryLimit {
-        if categoryID == nil || limit.Category.ID == *categoryID {
-            limits = append(limits, CategoryLimitResult{
-                CategoryID:   limit.Category.ID,
-                CategoryName: limit.Category.Name,
-                LimitAmount:  limit.LimitAmount,
-                Color:        limit.Category.Color,
-            })
-        }
+    // レスポンス構造体への変換
+    response := h.toMonthlyLimitsResponse(req.HouseholdID, limits)
+    
+    return c.JSON(http.StatusOK, response)
+}
+
+// レスポンス変換ロジック
+func (h *ExpenseAnalysisHandler) toMonthlyLimitsResponse(householdID int, limits []domain.CategoryLimit) MonthlyLimitsResult {
+    limitResponses := make([]CategoryLimitResult, 0, len(limits))
+    for _, limit := range limits {
+        limitResponses = append(limitResponses, CategoryLimitResult{
+            CategoryID:   limit.Category.ID,
+            CategoryName: limit.Category.Name,
+            LimitAmount:  limit.LimitAmount,
+            Color:        limit.Category.Color,
+        })
     }
     
-    return c.JSON(http.StatusOK, MonthlyLimitsResult{
+    return MonthlyLimitsResult{
         HouseholdID: householdID,
-        Limits:      limits,
-    })
+        Limits:      limitResponses,
+    }
 }
 ```
 
@@ -341,7 +380,63 @@ func (h *ExpenseAnalysisHandler) calculatePredictions(
 }
 ```
 
-#### 4.3.3 Response形式
+#### 4.3.3 ドメインモデル実装
+```go
+// domain/model/expense_predictor.go
+type ExpensePredictor struct{}
+
+func (p *ExpensePredictor) PredictMonthlyExpenses(
+    currentExpenses []ShoppingAmount,
+    limits []CategoryLimit,
+    currentDate time.Time,
+) []CategoryPrediction {
+    currentDay := currentDate.Day()
+    daysInMonth := time.Date(currentDate.Year(), currentDate.Month()+1, 0, 0, 0, 0, 0, time.UTC).Day()
+    
+    predictions := make([]CategoryPrediction, 0, len(limits))
+    
+    for _, limit := range limits {
+        currentAmount := p.sumByCategory(currentExpenses, limit.Category.ID)
+        prediction := p.calculateCategoryPrediction(currentAmount, limit, currentDay, daysInMonth)
+        predictions = append(predictions, prediction)
+    }
+    
+    return predictions
+}
+
+func (p *ExpensePredictor) calculateCategoryPrediction(
+    currentAmount int,
+    limit CategoryLimit,
+    currentDay, daysInMonth int,
+) CategoryPrediction {
+    dailyAverage := float64(currentAmount) / float64(currentDay)
+    predictedAmount := int(dailyAverage * float64(daysInMonth))
+    
+    return CategoryPrediction{
+        CategoryID:       limit.Category.ID,
+        CategoryName:     limit.Category.Name,
+        CurrentAmount:    currentAmount,
+        PredictedAmount:  predictedAmount,
+        LimitAmount:      limit.LimitAmount,
+        IsOverBudget:     predictedAmount > limit.LimitAmount,
+        RemainingAmount:  limit.LimitAmount - predictedAmount,
+        DailyAverage:     dailyAverage,
+    }
+}
+
+// テスト容易性のためのメソッド
+func (p *ExpensePredictor) sumByCategory(expenses []ShoppingAmount, categoryID CategoryID) int {
+    sum := 0
+    for _, expense := range expenses {
+        if expense.CategoryID == categoryID {
+            sum += expense.Amount
+        }
+    }
+    return sum
+}
+```
+
+#### 4.3.4 Response形式
 ```json
 {
   "current_expenses": {
@@ -580,18 +675,65 @@ CREATE TABLE expense_predictions (
 
 ### 9.1 単体テスト
 ```go
-// Function Tool テスト
-func TestSearchMonthlyExpenses(t *testing.T) {
-    // テストデータ準備
-    testData := setupTestExpenseData()
+// ドメインモデルテスト
+func TestExpensePredictor_PredictMonthlyExpenses(t *testing.T) {
+    predictor := &domain.ExpensePredictor{}
     
-    // Function実行
-    result, err := handler.SearchMonthlyExpenses(testData)
+    // テストデータ準備
+    currentExpenses := []domain.ShoppingAmount{
+        {CategoryID: 1, Amount: 20000},
+        {CategoryID: 2, Amount: 5000},
+    }
+    
+    limits := []domain.CategoryLimit{
+        {Category: domain.Category{ID: 1, Name: "食費"}, LimitAmount: 40000},
+        {Category: domain.Category{ID: 2, Name: "日用品"}, LimitAmount: 10000},
+    }
+    
+    currentDate := time.Date(2024, 1, 15, 0, 0, 0, 0, time.UTC)
+    
+    // 予測実行
+    predictions := predictor.PredictMonthlyExpenses(currentExpenses, limits, currentDate)
+    
+    // 結果検証
+    assert.Len(t, predictions, 2)
+    assert.Equal(t, 42000, predictions[0].PredictedAmount) // 20000 * 31 / 15
+    assert.True(t, predictions[0].IsOverBudget)
+    assert.Equal(t, 10333, predictions[1].PredictedAmount) // 5000 * 31 / 15
+    assert.True(t, predictions[1].IsOverBudget)
+}
+
+// Handlerテスト
+func TestExpenseAnalysisHandler_SearchMonthlyExpenses(t *testing.T) {
+    // モックユースケース準備
+    mockUsecase := &mock.MockShoppingUsecase{}
+    handler := NewExpenseAnalysisHandler(mockUsecase)
+    
+    // テストデータ準備
+    summary := &domain.ExpenseSummary{
+        TotalAmount: 45000,
+        CategoryAmounts: []domain.CategoryAmount{
+            {CategoryID: 1, CategoryName: "食費", Amount: 35000, Percentage: 77.8},
+        },
+    }
+    
+    mockUsecase.On("GetMonthlyExpensesSummary", mock.Anything).Return(summary, nil)
+    
+    // リクエスト実行
+    req := httptest.NewRequest(http.MethodGet, "/api/expenses/search", nil)
+    rec := httptest.NewRecorder()
+    c := echo.New().NewContext(req, rec)
+    
+    // Handler実行
+    err := handler.SearchMonthlyExpenses(c)
     
     // 結果検証
     assert.NoError(t, err)
+    assert.Equal(t, http.StatusOK, rec.Code)
+    
+    var result ExpenseSearchResult
+    json.Unmarshal(rec.Body.Bytes(), &result)
     assert.Equal(t, 45000, result.TotalAmount)
-    assert.Len(t, result.CategoryAmounts, 2)
 }
 ```
 
