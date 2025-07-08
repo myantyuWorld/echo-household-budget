@@ -381,130 +381,63 @@ func (h *ExpenseAnalysisHandler) toMonthlyLimitsResponse(householdID int, limits
 
 #### 4.3.2 Backend実装
 ```go
-func (h *ExpenseAnalysisHandler) PredictMonthlyExpenses(c echo.Context) error {
-    req := PredictExpensesRequest{
-        HouseholdID: c.Get("household_id").(int),
-        Year:        c.Get("year").(int),
-        Month:       c.Get("month").(int),
-        CurrentDate: c.Get("current_date").(string),
-    }
-    
-    // 現在までの支出データ取得
-    currentExpenses, err := h.shoppingUsecase.GetMonthlyExpenses(req)
-    if err != nil {
-        return err
-    }
-    
-    // 制限データ取得
-    limits, err := h.householdUsecase.GetCategoryLimits(req.HouseholdID)
-    if err != nil {
-        return err
-    }
-    
-    // 予測計算
-    predictions := h.calculatePredictions(currentExpenses, limits, req.CurrentDate)
-    
-    return c.JSON(http.StatusOK, PredictionResult{
-        CurrentExpenses: currentExpenses,
-        Predictions:     predictions,
-        Alerts:          h.generateAlerts(predictions, limits),
-    })
-}
+#### 4.3.2 処理フロー設計
 
-func (h *ExpenseAnalysisHandler) calculatePredictions(
-    expenses []ShoppingAmount,
-    limits []CategoryLimit,
-    currentDate string,
-) []CategoryPrediction {
-    // 日割り計算による予測アルゴリズム
-    currentDay := h.getCurrentDay(currentDate)
-    daysInMonth := h.getDaysInMonth(currentDate)
-    
-    predictions := []CategoryPrediction{}
-    
-    for _, limit := range limits {
-        // カテゴリ別現在支出
-        currentAmount := h.sumByCategory(expenses, limit.Category.ID)
-        
-        // 日割り予測
-        dailyAverage := float64(currentAmount) / float64(currentDay)
-        predictedAmount := int(dailyAverage * float64(daysInMonth))
-        
-        // 制限との比較
-        overBudget := predictedAmount > limit.LimitAmount
-        remaining := limit.LimitAmount - predictedAmount
-        
-        predictions = append(predictions, CategoryPrediction{
-            CategoryID:       limit.Category.ID,
-            CategoryName:     limit.Category.Name,
-            CurrentAmount:    currentAmount,
-            PredictedAmount:  predictedAmount,
-            LimitAmount:      limit.LimitAmount,
-            IsOverBudget:     overBudget,
-            RemainingAmount:  remaining,
-            DailyAverage:     dailyAverage,
-        })
-    }
-    
-    return predictions
-}
+**予測分析フロー**
+```mermaid
+sequenceDiagram
+    participant Handler as Handler
+    participant Usecase as Usecase
+    participant Domain as Domain
+    participant Repository as Repository
+
+    Handler->>Usecase: PredictMonthlyExpenses(req)
+    Usecase->>Repository: GetCurrentExpenses(householdID, year, month)
+    Repository-->>Usecase: []ShoppingAmount
+    Usecase->>Repository: GetCategoryLimits(householdID)
+    Repository-->>Usecase: []CategoryLimit
+    Usecase->>Domain: ExpensePredictor.Predict(expenses, limits, date)
+    Domain-->>Usecase: []CategoryPrediction
+    Usecase-->>Handler: *PredictionResult
+    Handler-->>Handler: レスポンス変換
 ```
 
-#### 4.3.3 ドメインモデル実装
+**処理内容**
+- **Handler**: パラメータ抽出、レスポンス変換
+- **Usecase**: 予測データ取得制御、ドメインサービス呼び出し
+- **Domain**: 予測アルゴリズム実行、アラート生成
+- **Repository**: 支出データ・制限データ取得
+```
+
+#### 4.3.3 ドメインモデル設計
+
+**ExpensePredictor構造体**
 ```go
-// domain/model/expense_predictor.go
 type ExpensePredictor struct{}
 
-func (p *ExpensePredictor) PredictMonthlyExpenses(
-    currentExpenses []ShoppingAmount,
-    limits []CategoryLimit,
-    currentDate time.Time,
-) []CategoryPrediction {
-    currentDay := currentDate.Day()
-    daysInMonth := time.Date(currentDate.Year(), currentDate.Month()+1, 0, 0, 0, 0, 0, time.UTC).Day()
-    
-    predictions := make([]CategoryPrediction, 0, len(limits))
-    
-    for _, limit := range limits {
-        currentAmount := p.sumByCategory(currentExpenses, limit.Category.ID)
-        prediction := p.calculateCategoryPrediction(currentAmount, limit, currentDay, daysInMonth)
-        predictions = append(predictions, prediction)
-    }
-    
-    return predictions
-}
-
-func (p *ExpensePredictor) calculateCategoryPrediction(
-    currentAmount int,
-    limit CategoryLimit,
-    currentDay, daysInMonth int,
-) CategoryPrediction {
-    dailyAverage := float64(currentAmount) / float64(currentDay)
-    predictedAmount := int(dailyAverage * float64(daysInMonth))
-    
-    return CategoryPrediction{
-        CategoryID:       limit.Category.ID,
-        CategoryName:     limit.Category.Name,
-        CurrentAmount:    currentAmount,
-        PredictedAmount:  predictedAmount,
-        LimitAmount:      limit.LimitAmount,
-        IsOverBudget:     predictedAmount > limit.LimitAmount,
-        RemainingAmount:  limit.LimitAmount - predictedAmount,
-        DailyAverage:     dailyAverage,
-    }
-}
-
-// テスト容易性のためのメソッド
-func (p *ExpensePredictor) sumByCategory(expenses []ShoppingAmount, categoryID CategoryID) int {
-    sum := 0
-    for _, expense := range expenses {
-        if expense.CategoryID == categoryID {
-            sum += expense.Amount
-        }
-    }
-    return sum
+type CategoryPrediction struct {
+    CategoryID       CategoryID
+    CategoryName     string
+    CurrentAmount    int
+    PredictedAmount  int
+    LimitAmount      int
+    IsOverBudget     bool
+    RemainingAmount  int
+    DailyAverage     float64
 }
 ```
+
+**予測アルゴリズム**
+- 日割り計算による線形予測
+- カテゴリ別予算オーバー判定
+- 残り予算計算
+- アラート生成ロジック
+
+**責務**
+- 支出パターンの分析
+- 予測計算の実行
+- 予算制限との比較
+- アラート条件の判定
 
 #### 4.3.4 Response形式
 ```json
