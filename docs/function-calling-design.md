@@ -89,6 +89,13 @@ type LLMClient struct {
     tools  []Tool
 }
 
+func NewLLMClient(tools []Tool) *LLMClient {
+  return &LLMClient{
+    client: openai.NewClient(os.Getenv("OPENAI_API_KEY")),
+    tools: tools,
+  }
+}
+
 func (c *LLMClient) ProcessMessage(input string) (string, error) {
     // 1. ユーザー入力とツール定義をLLMに送信
     // 2. 実行すべきツールの指示を受信
@@ -103,6 +110,10 @@ func (c *LLMClient) ProcessMessage(input string) (string, error) {
 ```go
 type ExpenseSearchTool struct {
     repository ExpenseRepository
+}
+
+func NewExpenseSearchTool(repository ExpenseRepository) *ExpenseSearchTool {
+  return &ExpenseSearchTool{repository: repository}
 }
 
 func (t *ExpenseSearchTool) Name() string {
@@ -126,6 +137,10 @@ type LimitRetrievalTool struct {
     repository CategoryRepository
 }
 
+func NewLimitRetrievalTool(repository CategoryRepository) *LimitRetrievalTool {
+  return &LimitRetrievalTool{repository: repository}
+}
+
 func (t *LimitRetrievalTool) Name() string {
     return "get_monthly_limits"
 }
@@ -139,7 +154,10 @@ func (t *LimitRetrievalTool) Execute(params map[string]interface{}) (interface{}
 ```go
 type PredictionTool struct {
     repository ExpenseRepository
-    predictor  *ExpensePredictor
+}
+
+func NewPredictionTool(repository ExpenseRepository) *PredictionTool {
+  return &PredictionTool{repository: repository}
 }
 
 func (t *PredictionTool) Name() string {
@@ -198,11 +216,12 @@ func NewToolRegistry(expenseRepo ExpenseRepository, categoryRepo CategoryReposit
 
 **ユースケース統合**
 ```go
-type ChatUsecase struct {
+type RegisterChatMessageUsecase struct {
+    chatMessageRepository domainRepository.ChatMessageRepository
     llmClient *LLMClient
 }
 
-func (u *ChatUsecase) ProcessChatMessage(input string, householdID int) (*ChatMessage, error) {
+func (u *RegisterChatMessageUsecase) ProcessChatMessage(input string, householdID int) (*ChatMessage, error) {
     // LLMClientでFunction Calling処理
     response, err := u.llmClient.ProcessMessage(input)
     if err != nil {
@@ -211,6 +230,29 @@ func (u *ChatUsecase) ProcessChatMessage(input string, householdID int) (*ChatMe
     
     // チャットメッセージとして保存・返却
     return u.saveChatMessage(response, householdID)
+}
+
+func (u *registerChatMessageUsecase) Execute(request RegisterChatMessageInput) (*domainmodel.ChatMessage, error) {
+	chatMessage := domainmodel.NewChatMessage(request.HouseholdID, request.UserID, request.Message)
+
+	if err := u.chatMessageRepository.Create(chatMessage); err != nil {
+		return nil, err
+	}
+
+	// ⭐️追加
+	response, err := u.llmClient.ProcessMessage(input)
+	if err != nil {
+		return nil, err
+	}
+  // ⭐️追加
+
+	// domaonmodel.chat.goで、AIの返答を生成する
+	aiChatReplyMessage := domainmodel.NewAIChatReplyMessage(request.HouseholdID)
+	if err := u.chatMessageRepository.Create(aiChatReplyMessage); err != nil {
+		return nil, err
+	}
+
+	return aiChatReplyMessage, nil
 }
 ```
 
@@ -590,7 +632,13 @@ AI: "大丈夫です！今月は予算を10%オーバーしましたが、
 "あなたは家計管理の専門家です。
 ユーザーの支出データを分析し、実用的で実現可能な
 アドバイスを提供してください。
-数値だけでなく、感情的なサポートも重要です。"
+数値だけでなく、感情的なサポートも重要です。
+
+以下のJSON形式で返答してください。
+{
+  "message": "返答メッセージ",
+}
+"
 ```
 
 #### 12.7.2 RAG（Retrieval-Augmented Generation）
