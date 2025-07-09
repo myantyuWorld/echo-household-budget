@@ -476,142 +476,114 @@ type CategoryPrediction struct {
 
 ## 5. フロントエンド実装
 
-### 5.1 Chat Feature拡張
+### 5.1 Chat Feature設計
 
-#### 5.1.1 Function Calling対応
+#### 5.1.1 基本方針
+- フロントエンドは既存のチャット機能を活用
+- ユーザーはチャット画面で自然言語で質問
+- バックエンドがFunction Callingで適切な処理を実行
+- 結果はチャットメッセージとして表示
+
+#### 5.1.2 処理フロー
+```mermaid
+sequenceDiagram
+    participant User as ユーザー
+    participant Chat as チャット画面
+    participant API as Backend API
+    participant OpenAI as OpenAI
+
+    User->>Chat: "今月の支出を分析して"
+    Chat->>API: POST /chat/messages
+    API->>OpenAI: Function Calling実行
+    OpenAI->>API: 分析結果
+    API->>API: 自然言語回答生成
+    API-->>Chat: チャットメッセージ
+    Chat-->>User: AIからの回答表示
+```
+
+#### 5.1.3 実装設計
 ```typescript
-// features/chat/composables/useFunctionCalling.ts
-export const useFunctionCalling = () => {
-  const handleFunctionCall = async (
-    message: string,
-    householdId: number
-  ): Promise<ChatResponse> => {
+// features/chat/composables/useChat.ts
+export const useChat = () => {
+  const sendMessage = async (message: string, householdId: number) => {
     const response = await chatApi.sendMessage({
       content: message,
       householdId,
-      enableFunctionCalling: true,
     });
     
     return response;
   };
   
-  const renderFunctionResult = (result: FunctionCallResult) => {
-    switch (result.function_name) {
-      case 'search_monthly_expenses':
-        return renderExpenseAnalysis(result.data);
-      case 'get_monthly_limits':
-        return renderLimitSummary(result.data);
-      case 'predict_monthly_expenses':
-        return renderPredictionChart(result.data);
-      default:
-        return renderDefault(result.data);
-    }
-  };
-  
-  return {
-    handleFunctionCall,
-    renderFunctionResult,
-  };
+  return { sendMessage };
 };
 ```
 
-#### 5.1.2 結果表示コンポーネント
+#### 5.1.4 チャットメッセージ表示
 ```vue
-<!-- features/chat/components/FunctionCallResult.vue -->
+<!-- features/chat/components/ChatMessage.vue -->
 <template>
-  <div class="function-result">
-    <div v-if="result.function_name === 'search_monthly_expenses'">
-      <ExpenseAnalysisChart :data="result.data" />
+  <div class="chat-message" :class="messageClass">
+    <div class="message-content">
+      {{ message.content }}
     </div>
-    
-    <div v-if="result.function_name === 'predict_monthly_expenses'">
-      <PredictionChart :data="result.data" />
-      <AlertList :alerts="result.data.alerts" />
-    </div>
-    
-    <div v-if="result.function_name === 'get_monthly_limits'">
-      <LimitSummaryTable :limits="result.data.limits" />
+    <div class="message-time">
+      {{ formatTime(message.createdAt) }}
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { FunctionCallResult } from '../types/function-calling';
-
 interface Props {
-  result: FunctionCallResult;
-}
-
-defineProps<Props>();
-</script>
-```
-
-### 5.2 新規Analysis Feature
-
-#### 5.2.1 ExpenseAnalysis機能
-```typescript
-// features/expense-analysis/index.ts
-export { default as ExpenseAnalysisView } from './ExpenseAnalysisView.vue';
-export { default as ExpenseAnalysisChart } from './components/ExpenseAnalysisChart.vue';
-export { default as PredictionChart } from './components/PredictionChart.vue';
-export { useExpenseAnalysis } from './composables/useExpenseAnalysis';
-```
-
-#### 5.2.2 分析結果表示
-```vue
-<!-- features/expense-analysis/components/ExpenseAnalysisChart.vue -->
-<template>
-  <div class="expense-analysis">
-    <div class="chart-container">
-      <canvas ref="chartRef"></canvas>
-    </div>
-    
-    <div class="summary-cards">
-      <div v-for="category in data.category_amounts" :key="category.category_id" 
-           class="category-card">
-        <h3>{{ category.category_name }}</h3>
-        <p class="amount">¥{{ category.amount.toLocaleString() }}</p>
-        <p class="percentage">{{ category.percentage }}%</p>
-      </div>
-    </div>
-  </div>
-</template>
-
-<script setup lang="ts">
-import { ref, onMounted } from 'vue';
-import Chart from 'chart.js/auto';
-import { ExpenseSearchResult } from '../types/expense-analysis';
-
-interface Props {
-  data: ExpenseSearchResult;
+  message: ChatMessage;
 }
 
 const props = defineProps<Props>();
-const chartRef = ref<HTMLCanvasElement>();
 
-onMounted(() => {
-  if (chartRef.value) {
-    new Chart(chartRef.value, {
-      type: 'doughnut',
-      data: {
-        labels: props.data.category_amounts.map(c => c.category_name),
-        datasets: [{
-          data: props.data.category_amounts.map(c => c.amount),
-          backgroundColor: ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4'],
-        }]
-      },
-      options: {
-        responsive: true,
-        plugins: {
-          legend: {
-            position: 'bottom',
-          }
-        }
-      }
-    });
-  }
-});
+const messageClass = computed(() => ({
+  'user-message': props.message.messageType === 'user',
+  'ai-message': props.message.messageType === 'ai',
+}));
 </script>
+```
+
+### 5.2 API連携設計
+
+#### 5.2.1 チャットAPI
+```typescript
+// shared/api/chat-api.ts
+export const chatApi = {
+  async sendMessage(request: ChatMessageRequest): Promise<ChatMessageResponse> {
+    const response = await client.post('/chat/messages', request);
+    return response.data;
+  },
+  
+  async getMessages(householdId: number): Promise<ChatMessage[]> {
+    const response = await client.get(`/chat/messages?householdId=${householdId}`);
+    return response.data;
+  },
+};
+```
+
+#### 5.2.2 型定義
+```typescript
+// shared/types/chat.ts
+export interface ChatMessage {
+  id: number;
+  householdId: number;
+  userId: number;
+  messageType: 'user' | 'ai';
+  content: string;
+  createdAt: string;
+}
+
+export interface ChatMessageRequest {
+  content: string;
+  householdId: number;
+}
+
+export interface ChatMessageResponse {
+  message: ChatMessage;
+}
 ```
 
 ## 6. データベース拡張
