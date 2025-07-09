@@ -70,73 +70,149 @@ Frontend (Vue3) → Backend (Go) → AI Service (OpenAI) → Function Tools
 
 ### 3.3 AI判断ロジック設計
 
-#### 3.3.1 入力解析・意図分類
-OpenAI GPTが以下の手順でユーザー入力を解析：
+#### 3.3.1 基本構成
+GitHub Issue #76のコメントで示された設計パターンに基づく実装:
 
-1. **自然言語解析**
-   - ユーザーの質問文を構造化
-   - キーワード抽出（「支出」「予算」「予測」等）
-   - 時間軸の特定（「今月」「先月」「月末まで」等）
-
-2. **意図分類**
-   - 支出分析：過去・現在の支出状況確認
-   - 予算管理：制限との比較・残高確認
-   - 予測分析：将来の支出予測・アラート
-   - 複合クエリ：複数の分析要求
-
-3. **パラメータ抽出**
-   - 対象期間（年月）の特定
-   - カテゴリ指定の有無
-   - 家計簿IDの取得
-
-#### 3.3.2 Function選択ロジック
-
-**単一Function選択**
-```
-例: "今月の食費はいくら？"
-→ search_monthly_expenses(category_id=1)
-
-例: "食費の予算上限は？"
-→ get_monthly_limits(category_id=1)
+**Tool Interface**
+```go
+type Tool interface {
+    Name() string
+    Description() string
+    Execute(params map[string]interface{}) (interface{}, error)
+}
 ```
 
-**複数Function組み合わせ**
-```
-例: "今月の支出を分析して、月末の予測を教えて"
-→ 1. search_monthly_expenses()
-→ 2. get_monthly_limits()
-→ 3. predict_monthly_expenses()
-```
+**LLMClient構造**
+```go
+type LLMClient struct {
+    client *openai.Client
+    tools  []Tool
+}
 
-#### 3.3.3 システムプロンプト設計
-```
-あなたは家計管理の専門AIアシスタントです。
-
-利用可能なFunction Tools:
-- search_monthly_expenses: 月間支出データの検索・集計
-- get_monthly_limits: 予算制限の取得
-- predict_monthly_expenses: 支出予測の生成
-
-ユーザーの質問に応じて適切なToolを選択し、
-取得したデータを分析して分かりやすく説明してください。
-
-回答時の注意点:
-- 金額は必ず3桁区切りで表示
-- 予算オーバーの場合は具体的な対策を提案
-- 感情に寄り添った励ましのメッセージを含める
+func (c *LLMClient) ProcessMessage(input string) (string, error) {
+    // 1. ユーザー入力とツール定義をLLMに送信
+    // 2. 実行すべきツールの指示を受信
+    // 3. 指定されたツールを実行
+    // 4. 最終回答を生成
+}
 ```
 
-#### 3.3.4 実行順序制御
+#### 3.3.2 支出分析ツール実装
 
-**依存関係による順序決定**
-1. 基本データ取得：`search_monthly_expenses`
-2. 制限データ取得：`get_monthly_limits`
-3. 予測計算：`predict_monthly_expenses`（1,2の結果を利用）
+**ExpenseSearchTool**
+```go
+type ExpenseSearchTool struct {
+    repository ExpenseRepository
+}
 
-**エラー処理**
-- Function実行失敗時の代替処理
-- 部分的なデータでの分析継続
-- ユーザーへの分かりやすいエラー説明
+func (t *ExpenseSearchTool) Name() string {
+    return "search_monthly_expenses"
+}
+
+func (t *ExpenseSearchTool) Description() string {
+    return "指定された月の支出データを検索し、カテゴリ別に集計する"
+}
+
+func (t *ExpenseSearchTool) Execute(params map[string]interface{}) (interface{}, error) {
+    // パラメータ解析
+    // データベースアクセス
+    // 結果の構造化
+}
+```
+
+**LimitRetrievalTool**
+```go
+type LimitRetrievalTool struct {
+    repository CategoryRepository
+}
+
+func (t *LimitRetrievalTool) Name() string {
+    return "get_monthly_limits"
+}
+
+func (t *LimitRetrievalTool) Execute(params map[string]interface{}) (interface{}, error) {
+    // 予算制限データの取得
+}
+```
+
+**PredictionTool**
+```go
+type PredictionTool struct {
+    repository ExpenseRepository
+    predictor  *ExpensePredictor
+}
+
+func (t *PredictionTool) Name() string {
+    return "predict_monthly_expenses"
+}
+
+func (t *PredictionTool) Execute(params map[string]interface{}) (interface{}, error) {
+    // 予測計算の実行
+}
+```
+
+#### 3.3.3 処理フロー
+```mermaid
+sequenceDiagram
+    participant User as ユーザー
+    participant Chat as チャット
+    participant LLM as LLMClient
+    participant Tools as Tools
+    participant OpenAI as OpenAI API
+
+    User->>Chat: "今月の支出を分析して予測を教えて"
+    Chat->>LLM: ProcessMessage(input)
+    LLM->>OpenAI: ユーザー入力 + ツール定義
+    OpenAI-->>LLM: 実行指示（tool1, tool2, tool3）
+    LLM->>Tools: search_monthly_expenses.Execute()
+    Tools-->>LLM: 支出データ
+    LLM->>Tools: get_monthly_limits.Execute()
+    Tools-->>LLM: 制限データ
+    LLM->>Tools: predict_monthly_expenses.Execute()
+    Tools-->>LLM: 予測結果
+    LLM->>OpenAI: 全結果データ
+    OpenAI-->>LLM: 自然言語回答
+    LLM-->>Chat: 最終回答
+    Chat-->>User: AI分析結果
+```
+
+#### 3.3.4 ツール管理とDI
+
+**ツールレジストリ**
+```go
+type ToolRegistry struct {
+    tools map[string]Tool
+}
+
+func NewToolRegistry(expenseRepo ExpenseRepository, categoryRepo CategoryRepository) *ToolRegistry {
+    registry := &ToolRegistry{tools: make(map[string]Tool)}
+    
+    // ツールの登録
+    registry.Register(NewExpenseSearchTool(expenseRepo))
+    registry.Register(NewLimitRetrievalTool(categoryRepo))
+    registry.Register(NewPredictionTool(expenseRepo, NewExpensePredictor()))
+    
+    return registry
+}
+```
+
+**ユースケース統合**
+```go
+type ChatUsecase struct {
+    llmClient *LLMClient
+}
+
+func (u *ChatUsecase) ProcessChatMessage(input string, householdID int) (*ChatMessage, error) {
+    // LLMClientでFunction Calling処理
+    response, err := u.llmClient.ProcessMessage(input)
+    if err != nil {
+        return nil, err
+    }
+    
+    // チャットメッセージとして保存・返却
+    return u.saveChatMessage(response, householdID)
+}
+```
 
 ## 4. Function Tools 設計
 
@@ -173,94 +249,6 @@ OpenAI GPTが以下の手順でユーザー入力を解析：
 }
 ```
 
-#### 4.1.2 Backend実装
-```go
-// FunctionTool handler - レスポンス変換のみ担当
-func (h *ExpenseAnalysisHandler) SearchMonthlyExpenses(c echo.Context) error {
-    req := SearchMonthlyExpensesRequest{
-        HouseholdID: c.Get("household_id").(int),
-        Year:        c.Get("year").(int),
-        Month:       c.Get("month").(int),
-        CategoryID:  c.Get("category_id").(*int),
-    }
-    
-    // ユースケースで業務処理を実行
-    summary, err := h.shoppingUsecase.GetMonthlyExpensesSummary(req)
-    if err != nil {
-        return err
-    }
-    
-    // レスポンス構造体への変換
-    response := h.toExpenseSearchResponse(summary)
-    
-    return c.JSON(http.StatusOK, response)
-}
-
-// レスポンス変換ロジック
-func (h *ExpenseAnalysisHandler) toExpenseSearchResponse(summary *domain.ExpenseSummary) ExpenseSearchResult {
-    return ExpenseSearchResult{
-        TotalAmount:     summary.TotalAmount,
-        CategoryAmounts: h.toCategoryAmountResponses(summary.CategoryAmounts),
-        DailyExpenses:   h.toDailyExpenseResponses(summary.DailyExpenses),
-        Period:          summary.Period,
-    }
-}
-
-func (h *ExpenseAnalysisHandler) toCategoryAmountResponses(amounts []domain.CategoryAmount) []CategoryAmountResponse {
-    responses := make([]CategoryAmountResponse, 0, len(amounts))
-    for _, amount := range amounts {
-        responses = append(responses, CategoryAmountResponse{
-            CategoryID:   amount.CategoryID,
-            CategoryName: amount.CategoryName,
-            Amount:       amount.Amount,
-            Percentage:   amount.Percentage,
-        })
-    }
-    return responses
-}
-
-func (h *ExpenseAnalysisHandler) toDailyExpenseResponses(expenses []domain.DailyExpense) []DailyExpenseResponse {
-    responses := make([]DailyExpenseResponse, 0, len(expenses))
-    for _, expense := range expenses {
-        responses = append(responses, DailyExpenseResponse{
-            Date:         expense.Date,
-            Amount:       expense.Amount,
-            CategoryName: expense.CategoryName,
-        })
-    }
-    return responses
-}
-```
-
-#### 4.1.3 Response形式
-```json
-{
-  "total_amount": 45000,
-  "category_amounts": [
-    {
-      "category_id": 1,
-      "category_name": "食費",
-      "amount": 35000,
-      "percentage": 77.8
-    },
-    {
-      "category_id": 2,
-      "category_name": "日用品",
-      "amount": 10000,
-      "percentage": 22.2
-    }
-  ],
-  "daily_expenses": [
-    {
-      "date": "2024-01-01",
-      "amount": 1500,
-      "category_name": "食費"
-    }
-  ],
-  "period": "2024年1月"
-}
-```
-
 ### 4.2 Monthly Limit Retrieval Tool
 **目的**: 月間支出制限の取得
 
@@ -283,66 +271,6 @@ func (h *ExpenseAnalysisHandler) toDailyExpenseResponses(expenses []domain.Daily
     },
     "required": ["household_id"]
   }
-}
-```
-
-#### 4.2.2 Backend実装
-```go
-func (h *ExpenseAnalysisHandler) GetMonthlyLimits(c echo.Context) error {
-    req := MonthlyLimitsRequest{
-        HouseholdID: c.Get("household_id").(int),
-        CategoryID:  c.Get("category_id").(*int),
-    }
-    
-    // ユースケースで業務処理を実行
-    limits, err := h.householdUsecase.GetCategoryLimits(req)
-    if err != nil {
-        return err
-    }
-    
-    // レスポンス構造体への変換
-    response := h.toMonthlyLimitsResponse(req.HouseholdID, limits)
-    
-    return c.JSON(http.StatusOK, response)
-}
-
-// レスポンス変換ロジック
-func (h *ExpenseAnalysisHandler) toMonthlyLimitsResponse(householdID int, limits []domain.CategoryLimit) MonthlyLimitsResult {
-    limitResponses := make([]CategoryLimitResult, 0, len(limits))
-    for _, limit := range limits {
-        limitResponses = append(limitResponses, CategoryLimitResult{
-            CategoryID:   limit.Category.ID,
-            CategoryName: limit.Category.Name,
-            LimitAmount:  limit.LimitAmount,
-            Color:        limit.Category.Color,
-        })
-    }
-    
-    return MonthlyLimitsResult{
-        HouseholdID: householdID,
-        Limits:      limitResponses,
-    }
-}
-```
-
-#### 4.2.3 Response形式
-```json
-{
-  "household_id": 1,
-  "limits": [
-    {
-      "category_id": 1,
-      "category_name": "食費",
-      "limit_amount": 40000,
-      "color": "#FF6B6B"
-    },
-    {
-      "category_id": 2,
-      "category_name": "日用品",
-      "limit_amount": 10000,
-      "color": "#4ECDC4"
-    }
-  ]
 }
 ```
 
@@ -380,28 +308,6 @@ func (h *ExpenseAnalysisHandler) toMonthlyLimitsResponse(householdID int, limits
 ```
 
 #### 4.3.2 Backend実装
-```go
-#### 4.3.2 処理フロー設計
-
-**予測分析フロー**
-```mermaid
-sequenceDiagram
-    participant Handler as Handler
-    participant Usecase as Usecase
-    participant Domain as Domain
-    participant Repository as Repository
-
-    Handler->>Usecase: PredictMonthlyExpenses(req)
-    Usecase->>Repository: GetCurrentExpenses(householdID, year, month)
-    Repository-->>Usecase: []ShoppingAmount
-    Usecase->>Repository: GetCategoryLimits(householdID)
-    Repository-->>Usecase: []CategoryLimit
-    Usecase->>Domain: ExpensePredictor.Predict(expenses, limits, date)
-    Domain-->>Usecase: []CategoryPrediction
-    Usecase-->>Handler: *PredictionResult
-    Handler-->>Handler: レスポンス変換
-```
-
 **処理内容**
 - **Handler**: パラメータ抽出、レスポンス変換
 - **Usecase**: 予測データ取得制御、ドメインサービス呼び出し
@@ -439,40 +345,6 @@ type CategoryPrediction struct {
 - 予算制限との比較
 - アラート条件の判定
 
-#### 4.3.4 Response形式
-```json
-{
-  "current_expenses": {
-    "total_amount": 25000,
-    "category_amounts": [
-      {
-        "category_id": 1,
-        "category_name": "食費",
-        "amount": 20000
-      }
-    ]
-  },
-  "predictions": [
-    {
-      "category_id": 1,
-      "category_name": "食費",
-      "current_amount": 20000,
-      "predicted_amount": 42000,
-      "limit_amount": 40000,
-      "is_over_budget": true,
-      "remaining_amount": -2000,
-      "daily_average": 1333.33
-    }
-  ],
-  "alerts": [
-    {
-      "category_name": "食費",
-      "message": "現在のペースでは予算を2,000円オーバーする可能性があります",
-      "severity": "warning"
-    }
-  ]
-}
-```
 
 ## 5. フロントエンド実装
 
@@ -501,90 +373,6 @@ sequenceDiagram
     Chat-->>User: AIからの回答表示
 ```
 
-#### 5.1.3 実装設計
-```typescript
-// features/chat/composables/useChat.ts
-export const useChat = () => {
-  const sendMessage = async (message: string, householdId: number) => {
-    const response = await chatApi.sendMessage({
-      content: message,
-      householdId,
-    });
-    
-    return response;
-  };
-  
-  return { sendMessage };
-};
-```
-
-#### 5.1.4 チャットメッセージ表示
-```vue
-<!-- features/chat/components/ChatMessage.vue -->
-<template>
-  <div class="chat-message" :class="messageClass">
-    <div class="message-content">
-      {{ message.content }}
-    </div>
-    <div class="message-time">
-      {{ formatTime(message.createdAt) }}
-    </div>
-  </div>
-</template>
-
-<script setup lang="ts">
-interface Props {
-  message: ChatMessage;
-}
-
-const props = defineProps<Props>();
-
-const messageClass = computed(() => ({
-  'user-message': props.message.messageType === 'user',
-  'ai-message': props.message.messageType === 'ai',
-}));
-</script>
-```
-
-### 5.2 API連携設計
-
-#### 5.2.1 チャットAPI
-```typescript
-// shared/api/chat-api.ts
-export const chatApi = {
-  async sendMessage(request: ChatMessageRequest): Promise<ChatMessageResponse> {
-    const response = await client.post('/chat/messages', request);
-    return response.data;
-  },
-  
-  async getMessages(householdId: number): Promise<ChatMessage[]> {
-    const response = await client.get(`/chat/messages?householdId=${householdId}`);
-    return response.data;
-  },
-};
-```
-
-#### 5.2.2 型定義
-```typescript
-// shared/types/chat.ts
-export interface ChatMessage {
-  id: number;
-  householdId: number;
-  userId: number;
-  messageType: 'user' | 'ai';
-  content: string;
-  createdAt: string;
-}
-
-export interface ChatMessageRequest {
-  content: string;
-  householdId: number;
-}
-
-export interface ChatMessageResponse {
-  message: ChatMessage;
-}
-```
 
 ## 6. データベース拡張
 
