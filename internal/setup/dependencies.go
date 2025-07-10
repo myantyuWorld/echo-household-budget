@@ -6,9 +6,7 @@ import (
 	domainmodel "echo-household-budget/internal/domain/model"
 	domainRepository "echo-household-budget/internal/domain/repository"
 	domainService "echo-household-budget/internal/domain/service"
-	"echo-household-budget/internal/domain/service/functioncalling"
 	"echo-household-budget/internal/handler"
-	"echo-household-budget/internal/infrastructure/llm"
 	"echo-household-budget/internal/infrastructure/persistence/repository"
 	"echo-household-budget/internal/infrastructure/storage/s3"
 	"echo-household-budget/internal/usecase"
@@ -37,10 +35,6 @@ type Dependencies struct {
 	// Services
 	UserAccountService domainService.UserAccountService
 	HouseHoldService   domainService.HouseHoldService
-
-	// Function Calling
-	ToolRegistry *functioncalling.ToolRegistry
-	LLMClient    *llm.LLMClient
 
 	// Use Cases
 	SessionManager              usecase.SessionManager
@@ -116,10 +110,6 @@ func NewDependencies(appConfig *config.AppConfig) *Dependencies {
 	deps.UserAccountService = domainService.NewUserAccountService(deps.UserAccountRepository, deps.CategoryRepository, deps.HouseHoldRepository)
 	deps.HouseHoldService = domainService.NewHouseHoldService(deps.HouseHoldRepository, deps.ShoppingRepository, deps.CategoryRepository)
 
-	// Function Calling の初期化
-	deps.ToolRegistry = functioncalling.NewToolRegistry(deps.ShoppingRepository, deps.HouseHoldRepository)
-	deps.LLMClient = llm.NewLLMClient(deps.ToolRegistry.GetAllTools())
-
 	// ユースケースの初期化
 	deps.SessionManager = usecase.NewSessionManager()
 	deps.KaimemoService = usecase.NewKaimemoService(deps.KaimemoRepository)
@@ -130,7 +120,7 @@ func NewDependencies(appConfig *config.AppConfig) *Dependencies {
 	deps.FetchInformationUsecase = usecase.NewFetchInformationUsecase(deps.InformationRepository)
 	deps.PublishInformationUsecase = usecase.NewPublishInformationUsecase(deps.InformationRepository, deps.UserInformationRepository, deps.UserAccountService)
 	deps.FetchUserInformationUsecase = usecase.NewFetchUserInformationUsecase(deps.UserInformationRepository)
-	deps.RegisterChatMessageUsecase = usecase.NewRegisterChatMessageUsecase(deps.ChatMessageRepository, deps.LLMClient)
+	deps.RegisterChatMessageUsecase = usecase.NewRegisterChatMessageUsecase(deps.ChatMessageRepository)
 	deps.FetchChatMessageUsecase = usecase.NewFetchChatMessageUsecase(deps.ChatMessageRepository)
 
 	// ハンドラーの初期化

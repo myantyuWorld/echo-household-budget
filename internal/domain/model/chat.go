@@ -29,12 +29,12 @@ func NewChatMessage(householdID int, userID int, content string) *ChatMessage {
 	}
 }
 
-func NewAIChatReplyMessage(householdID int, content string) *ChatMessage {
+func NewAIChatReplyMessage(householdID int) *ChatMessage {
 	return &ChatMessage{
 		HouseholdID: householdID,
 		UserID:      0,
 		MessageType: ChatMessageTypeAI,
-		Content:     content,
+		Content:     "AIサービスで受け付けました、解析中です🤖(現在、実装中です)",
 		CreatedAt:   time.Now(),
 	}
 }
