@@ -186,3 +186,245 @@ ai-service/
 - **NL2SQL**：パターン化しにくい複雑な問い合わせや未知の質問に柔軟に対応したい場合に有効（セキュリティ・バリデーションが必須）
 
 両者を組み合わせて運用することで、柔軟かつ安全な AI 分析サービスを実現できます。
+
+# AI Function Calling 実装ガイド
+
+本プロジェクトでは、OpenAI の Function Calling を活用したAI支出分析機能を実装しています。
+
+## 概要
+
+AI Function Calling は、ユーザーの自然言語での質問に対して、AIが適切な関数（ツール）を選択・実行し、データ分析結果を自然言語で回答する機能です。
+
+### システム構成
+
+```
+ユーザー → チャット画面 → RegisterChatMessageUsecase → LLMClient → Function Tools → データベース
+                                    ↓
+                         OpenAI API (Function Calling)
+                                    ↓
+                            自然言語での回答生成
+```
+
+## 実装されているFunction Tools
+
+現在、以下の3つのFunction Toolが実装されています：
+
+### 1. ExpenseSearchTool
+- **目的**: 月間支出データの検索・カテゴリ別集計
+- **場所**: `/internal/domain/service/functioncalling/expense_search_tool.go`
+- **機能**: 指定された月の支出データを取得し、カテゴリ別に集計
+
+### 2. LimitRetrievalTool
+- **目的**: 家計簿の月間支出制限取得
+- **場所**: `/internal/domain/service/functioncalling/limit_retrieval_tool.go`
+- **機能**: 設定された予算制限を取得
+
+### 3. PredictionTool
+- **目的**: 現在の支出ペースからの月末予測
+- **場所**: `/internal/domain/service/functioncalling/prediction_tool.go`
+- **機能**: 日割り計算による支出予測と予算超過判定
+
+## 新しいFunction Toolを追加する手順
+
+### Step 1: Function Tool の実装
+
+新しいツールを `/internal/domain/service/functioncalling/` ディレクトリに作成します。
+
+```go
+package functioncalling
+
+import (
+    domainmodel "echo-household-budget/internal/domain/model"
+    "echo-household-budget/internal/infrastructure/llm"
+    "fmt"
+)
+
+type YourNewTool struct {
+    // 必要なリポジトリを定義
+    repository domainmodel.YourRepository
+}
+
+func NewYourNewTool(repository domainmodel.YourRepository) llm.Tool {
+    return &YourNewTool{
+        repository: repository,
+    }
+}
+
+func (t *YourNewTool) Name() string {
+    return "your_function_name"  // OpenAI API で呼び出される関数名
+}
+
+func (t *YourNewTool) Description() string {
+    return "あなたの新しい機能の説明"  // AIが関数を選択する際の判断材料
+}
+
+func (t *YourNewTool) Execute(params map[string]interface{}) (interface{}, error) {
+    // パラメータの取得
+    householdID, ok := params["household_id"].(float64)
+    if !ok {
+        return nil, fmt.Errorf("household_id is required")
+    }
+
+    // 必要に応じて他のパラメータも取得
+    // year, month, category_id など
+
+    // ビジネスロジックの実行
+    result, err := t.repository.YourMethod(domainmodel.HouseHoldID(householdID))
+    if err != nil {
+        return nil, fmt.Errorf("failed to execute your logic: %w", err)
+    }
+
+    // 結果の構造化（JSON形式で返却）
+    return map[string]interface{}{
+        "result": result,
+        "status": "success",
+        // その他必要な情報
+    }, nil
+}
+```
+
+### Step 2: ToolRegistry への登録
+
+`/internal/domain/service/functioncalling/tool_registry.go` でツールを登録します。
+
+```go
+func NewToolRegistry(
+    shoppingRepository domainmodel.ShoppingRepository,
+    householdRepository domainmodel.HouseHoldRepository,
+    yourRepository domainmodel.YourRepository,  // 新しいリポジトリを追加
+) *ToolRegistry {
+    registry := &ToolRegistry{
+        tools: make(map[string]llm.Tool),
+    }
+
+    registry.Register(NewExpenseSearchTool(shoppingRepository))
+    registry.Register(NewLimitRetrievalTool(householdRepository))
+    registry.Register(NewPredictionTool(shoppingRepository, householdRepository))
+    registry.Register(NewYourNewTool(yourRepository))  // 新しいツールを登録
+
+    return registry
+}
+```
+
+### Step 3: 依存性注入の設定
+
+`/internal/setup/dependencies.go` で依存性注入を設定します。
+
+```go
+// Dependencies 構造体に新しいリポジトリを追加
+type Dependencies struct {
+    // 既存のリポジトリ
+    ShoppingRepository    domainmodel.ShoppingRepository
+    HouseHoldRepository   domainmodel.HouseHoldRepository
+    YourRepository        domainmodel.YourRepository  // 新しいリポジトリを追加
+    
+    // 既存のコンポーネント
+    ToolRegistry *functioncalling.ToolRegistry
+    LLMClient    *llm.LLMClient
+}
+
+// NewDependencies 関数内で初期化
+func NewDependencies(appConfig *config.AppConfig) *Dependencies {
+    // 既存の初期化コード...
+    
+    deps.YourRepository = repository.NewYourRepository(db)  // リポジトリを初期化
+    
+    // Function Calling の初期化を更新
+    deps.ToolRegistry = functioncalling.NewToolRegistry(
+        deps.ShoppingRepository, 
+        deps.HouseHoldRepository,
+        deps.YourRepository,  // 新しいリポジトリを渡す
+    )
+    deps.LLMClient = llm.NewLLMClient(deps.ToolRegistry.GetAllTools())
+    
+    // 残りの初期化コード...
+}
+```
+
+### Step 4: OpenAI Function定義の拡張（オプション）
+
+より複雑なパラメータが必要な場合は、`/internal/infrastructure/llm/llm_client.go` の `buildToolDefinitions` メソッドでパラメータ定義をカスタマイズできます。
+
+```go
+func (c *LLMClient) buildToolDefinitions() []openai.Tool {
+    var tools []openai.Tool
+    
+    for _, tool := range c.tools {
+        var parameters map[string]interface{}
+        
+        // ツールごとに異なるパラメータ定義
+        switch tool.Name() {
+        case "your_function_name":
+            parameters = map[string]interface{}{
+                "type": "object",
+                "properties": map[string]interface{}{
+                    "household_id": map[string]interface{}{
+                        "type":        "integer",
+                        "description": "家計簿ID",
+                    },
+                    "your_param": map[string]interface{}{
+                        "type":        "string",
+                        "description": "あなたのパラメータの説明",
+                    },
+                },
+                "required": []string{"household_id", "your_param"},
+            }
+        default:
+            // デフォルトのパラメータ定義
+            parameters = map[string]interface{}{
+                "type": "object",
+                "properties": map[string]interface{}{
+                    "household_id": map[string]interface{}{
+                        "type":        "integer",
+                        "description": "家計簿ID",
+                    },
+                },
+                "required": []string{"household_id"},
+            }
+        }
+        
+        tools = append(tools, openai.Tool{
+            Type: openai.ToolTypeFunction,
+            Function: &openai.FunctionDefinition{
+                Name:        tool.Name(),
+                Description: tool.Description(),
+                Parameters:  parameters,
+            },
+        })
+    }
+    
+    return tools
+}
+```
+
+## 実装時の注意点
+
+### 1. エラーハンドリング
+- パラメータの型チェックを必ず行う
+- データベースエラーを適切にハンドリングする
+- ユーザーフレンドリーなエラーメッセージを返す
+
+### 2. セキュリティ
+- 家計簿IDによるアクセス制御を実装する
+- SQL インジェクション対策を行う
+- 機密情報のログ出力を避ける
+
+### 3. パフォーマンス
+- 大量データの処理時は適切な制限を設ける
+- データベースクエリを最適化する
+- 必要に応じてキャッシュを実装する
+
+### 4. テスト
+- 単体テストを作成する
+- モックを使用してリポジトリをテストする
+- パラメータの境界値テストを行う
+
+## 使用例
+
+ユーザーがチャットで以下のような質問をすると、AIが適切なツールを選択して実行します：
+
+- "今月の食費の支出を教えて" → ExpenseSearchTool
+- "来月の予算制限はいくら？" → LimitRetrievalTool  
+- "このペースだと月末にいくらになる？" → PredictionTool
+
+新しいツールを追加することで、より多様な質問に対応できるようになります。
