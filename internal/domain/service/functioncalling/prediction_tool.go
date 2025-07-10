@@ -5,17 +5,20 @@ import (
 	"echo-household-budget/internal/infrastructure/llm"
 	"echo-household-budget/internal/infrastructure/persistence/models"
 	"fmt"
+	"log"
 	"time"
+
+	"github.com/davecgh/go-spew/spew"
 )
 
 type PredictionTool struct {
-	shoppingRepository domainmodel.ShoppingRepository
+	shoppingRepository  domainmodel.ShoppingRepository
 	householdRepository domainmodel.HouseHoldRepository
 }
 
 func NewPredictionTool(shoppingRepository domainmodel.ShoppingRepository, householdRepository domainmodel.HouseHoldRepository) llm.Tool {
 	return &PredictionTool{
-		shoppingRepository: shoppingRepository,
+		shoppingRepository:  shoppingRepository,
 		householdRepository: householdRepository,
 	}
 }
@@ -29,6 +32,9 @@ func (t *PredictionTool) Description() string {
 }
 
 func (t *PredictionTool) Execute(params map[string]interface{}) (interface{}, error) {
+	log.Println("============ PredictionTool Execute =============")
+	spew.Dump(params)
+
 	householdID, ok := params["household_id"].(float64)
 	if !ok {
 		return nil, fmt.Errorf("household_id is required")
@@ -55,7 +61,7 @@ func (t *PredictionTool) Execute(params map[string]interface{}) (interface{}, er
 	}
 
 	date := fmt.Sprintf("%04d-%02d-01", int(year), int(month))
-	
+
 	shoppingAmounts, err := t.shoppingRepository.FetchShoppingAmountItemByHouseholdID(
 		domainmodel.HouseHoldID(householdID),
 		date,
@@ -77,13 +83,13 @@ func (t *PredictionTool) generatePrediction(shoppingAmounts []*models.ShoppingAm
 	firstDay := time.Date(year, time.Month(month), 1, 0, 0, 0, 0, currentDate.Location())
 	lastDay := firstDay.AddDate(0, 1, -1)
 	totalDaysInMonth := lastDay.Day()
-	
+
 	// 経過日数を計算
 	daysPassed := currentDate.Day()
-	
+
 	// 残り日数を計算
 	remainingDays := totalDaysInMonth - daysPassed
-	
+
 	// カテゴリ別の現在の支出を集計
 	categoryAmounts := make(map[uint]int)
 	for _, shopping := range shoppingAmounts {
@@ -101,30 +107,30 @@ func (t *PredictionTool) generatePrediction(shoppingAmounts []*models.ShoppingAm
 	totalCurrentAmount := 0
 	totalPredictedAmount := 0
 	totalLimitAmount := 0
-	
+
 	for categoryID, currentAmount := range categoryAmounts {
 		totalCurrentAmount += currentAmount
-		
+
 		// 日割りで予測
 		dailyAverage := float64(currentAmount) / float64(daysPassed)
 		predictedAmount := int(dailyAverage * float64(totalDaysInMonth))
 		totalPredictedAmount += predictedAmount
-		
+
 		// 制限との比較
 		limitAmount := categoryLimits[categoryID]
 		totalLimitAmount += limitAmount
-		
+
 		isOverBudget := predictedAmount > limitAmount
 		remainingAmount := limitAmount - currentAmount
-		
+
 		categoryPredictions = append(categoryPredictions, map[string]interface{}{
-			"category_id":        categoryID,
-			"current_amount":     currentAmount,
-			"predicted_amount":   predictedAmount,
-			"limit_amount":       limitAmount,
-			"is_over_budget":     isOverBudget,
-			"remaining_amount":   remainingAmount,
-			"daily_average":      dailyAverage,
+			"category_id":      categoryID,
+			"current_amount":   currentAmount,
+			"predicted_amount": predictedAmount,
+			"limit_amount":     limitAmount,
+			"is_over_budget":   isOverBudget,
+			"remaining_amount": remainingAmount,
+			"daily_average":    dailyAverage,
 		})
 	}
 

@@ -4,8 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"os"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/sashabaranov/go-openai"
 )
 
@@ -23,7 +25,7 @@ func NewLLMClient(tools []Tool) *LLMClient {
 
 func (c *LLMClient) ProcessMessage(input string) (string, error) {
 	toolDefinitions := c.buildToolDefinitions()
-	
+
 	messages := []openai.ChatCompletionMessage{
 		{
 			Role:    openai.ChatMessageRoleSystem,
@@ -49,7 +51,9 @@ func (c *LLMClient) ProcessMessage(input string) (string, error) {
 	}
 
 	message := resp.Choices[0].Message
-	
+	log.Println("============ choise message =============")
+	spew.Dump(message)
+
 	if len(message.ToolCalls) > 0 {
 		return c.handleToolCalls(message, messages)
 	}
@@ -59,7 +63,7 @@ func (c *LLMClient) ProcessMessage(input string) (string, error) {
 
 func (c *LLMClient) buildToolDefinitions() []openai.Tool {
 	var tools []openai.Tool
-	
+
 	for _, tool := range c.tools {
 		tools = append(tools, openai.Tool{
 			Type: openai.ToolTypeFunction,
@@ -79,26 +83,26 @@ func (c *LLMClient) buildToolDefinitions() []openai.Tool {
 			},
 		})
 	}
-	
+
 	return tools
 }
 
 func (c *LLMClient) handleToolCalls(message openai.ChatCompletionMessage, messages []openai.ChatCompletionMessage) (string, error) {
 	messages = append(messages, message)
-	
+
 	for _, toolCall := range message.ToolCalls {
 		result, err := c.executeToolCall(toolCall)
 		if err != nil {
 			return "", fmt.Errorf("failed to execute tool call: %w", err)
 		}
-		
+
 		messages = append(messages, openai.ChatCompletionMessage{
 			Role:       openai.ChatMessageRoleTool,
 			Content:    result,
 			ToolCallID: toolCall.ID,
 		})
 	}
-	
+
 	resp, err := c.client.CreateChatCompletion(
 		context.Background(),
 		openai.ChatCompletionRequest{
@@ -119,22 +123,25 @@ func (c *LLMClient) executeToolCall(toolCall openai.ToolCall) (string, error) {
 	if err := json.Unmarshal([]byte(toolCall.Function.Arguments), &params); err != nil {
 		return "", fmt.Errorf("failed to unmarshal tool call arguments: %w", err)
 	}
-	
+
+	log.Println("============ toolCall param =============")
+	spew.Dump(params)
+
 	for _, tool := range c.tools {
 		if tool.Name() == toolCall.Function.Name {
 			result, err := tool.Execute(params)
 			if err != nil {
 				return "", fmt.Errorf("tool execution failed: %w", err)
 			}
-			
+
 			resultJSON, err := json.Marshal(result)
 			if err != nil {
 				return "", fmt.Errorf("failed to marshal tool result: %w", err)
 			}
-			
+
 			return string(resultJSON), nil
 		}
 	}
-	
+
 	return "", fmt.Errorf("tool not found: %s", toolCall.Function.Name)
 }
